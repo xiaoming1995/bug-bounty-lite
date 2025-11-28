@@ -1,0 +1,17 @@
+# Server 配置
+server:
+  port: ":8080"      # 服务监听端口
+  mode: "debug"      # 运行模式: debug (开发) / release (生产)
+
+# Database 配置 (PostgreSQL)
+database:
+  # DSN 格式: host=主机 user=用户 password=密码 dbname=数据库名 port=端口 sslmode=模式
+  # 请务必修改下面的 password 为你本地数据库的真实密码
+  dsn: "host=localhost user=postgres password=YOUR_PASSWORD_HERE dbname=bugbounty port=5432 sslmode=disable TimeZone=Asia/Shanghai"
+  max_idle: 10       # 最大空闲连接数
+  max_open: 100      # 最大打开连接数
+
+# JWT (后续鉴权使用)
+jwt:
+  secret: "replace_this_with_a_super_secure_random_string" # 请换成复杂的随机字符串
+  expire: 7200 # Token 过期时间 (秒)，这里设为 2 小时

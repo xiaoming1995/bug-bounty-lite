@@ -1,0 +1,23 @@
+# --- 1. 敏感配置 (最重要！) ---
+config/config.yaml
+*.env
+
+# --- 2. 编译产物 ---
+# Windows
+*.exe
+*.dll
+# Mac/Linux
+main
+server
+# 临时文件
+*.test
+*.out
+
+# --- 3. IDE & 系统文件 ---
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# --- 4. 依赖目录 (如果你使用 Go Modules，通常不需要提交 vendor) ---
+vendor/
