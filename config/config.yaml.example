@@ -3,11 +3,11 @@ server:
   port: ":8080"      # 服务监听端口
   mode: "debug"      # 运行模式: debug (开发) / release (生产)
 
-# Database 配置 (PostgreSQL)
+# Database 配置 (MySQL)
 database:
-  # DSN 格式: host=主机 user=用户 password=密码 dbname=数据库名 port=端口 sslmode=模式
+  # DSN 格式: user:password@tcp(host:port)/dbname?charset=utf8mb4&parseTime=True&loc=Local
   # 请务必修改下面的 password 为你本地数据库的真实密码
-  dsn: "host=localhost user=postgres password=YOUR_PASSWORD_HERE dbname=bugbounty port=5432 sslmode=disable TimeZone=Asia/Shanghai"
+  dsn: "root:YOUR_PASSWORD_HERE@tcp(localhost:3306)/bugbounty?charset=utf8mb4&parseTime=True&loc=Local"
   max_idle: 10       # 最大空闲连接数
   max_open: 100      # 最大打开连接数
 

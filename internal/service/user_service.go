@@ -2,17 +2,23 @@ package service
 
 import (
 	"bug-bounty-lite/internal/domain"
+	"bug-bounty-lite/pkg/jwt"
 	"errors"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
 type userService struct {
-	repo domain.UserRepository
+	repo       domain.UserRepository
+	jwtManager *jwt.JWTManager
 }
 
 // NewUserService 构造函数
-func NewUserService(repo domain.UserRepository) domain.UserService {
-	return &userService{repo: repo}
+func NewUserService(repo domain.UserRepository, jwtManager *jwt.JWTManager) domain.UserService {
+	return &userService{
+		repo:       repo,
+		jwtManager: jwtManager,
+	}
 }
 
 // Register 用户注册
@@ -38,7 +44,7 @@ func (s *userService) Register(user *domain.User) error {
 }
 
 // Login 用户登录
-// 核心逻辑：接收明文密码 -> bcrypt比对数据库里的哈希 -> 成功则返回用户
+// 核心逻辑：接收明文密码 -> bcrypt比对数据库里的哈希 -> 成功则返回用户和JWT
 func (s *userService) Login(username, password string) (*domain.User, string, error) {
 	// 1. 根据用户名找用户
 	user, err := s.repo.FindByUsername(username)
@@ -54,9 +60,11 @@ func (s *userService) Login(username, password string) (*domain.User, string, er
 		return nil, "", errors.New("invalid username or password")
 	}
 
-	// 3. 生成 Token
-	// (我们将在下一步引入 JWT，这里先返回一个占位符)
-	token := "mock_token_todo_implement_jwt"
+	// 3. 生成 JWT Token
+	token, err := s.jwtManager.GenerateToken(user.ID, user.Username, user.Role)
+	if err != nil {
+		return nil, "", errors.New("failed to generate token")
+	}
 
 	return user, token, nil
 }

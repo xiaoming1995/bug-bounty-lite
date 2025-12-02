@@ -44,3 +44,74 @@ func (s *reportService) ListReports(page, pageSize int) ([]domain.Report, int64,
 	}
 	return s.repo.List(page, pageSize)
 }
+
+// UpdateReport 更新报告
+func (s *reportService) UpdateReport(id uint, userID uint, userRole string, input *domain.ReportUpdateInput) (*domain.Report, error) {
+	// 1. 获取现有报告
+	report, err := s.repo.FindByID(id)
+	if err != nil {
+		return nil, errors.New("report not found")
+	}
+
+	// 2. 权限校验
+	// 只有报告作者、管理员或厂商可以更新
+	if report.AuthorID != userID && userRole != "admin" && userRole != "vendor" {
+		return nil, errors.New("permission denied")
+	}
+
+	// 3. 状态更新权限校验
+	// 只有管理员和厂商可以修改状态
+	if input.Status != "" && input.Status != report.Status {
+		if userRole != "admin" && userRole != "vendor" {
+			return nil, errors.New("only admin or vendor can change status")
+		}
+		// 校验状态流转
+		if !isValidStatusTransition(report.Status, input.Status) {
+			return nil, errors.New("invalid status transition")
+		}
+		report.Status = input.Status
+	}
+
+	// 4. 更新其他字段
+	if input.Title != "" {
+		report.Title = input.Title
+	}
+	if input.Description != "" {
+		report.Description = input.Description
+	}
+	if input.Type != "" {
+		report.Type = input.Type
+	}
+	if input.Severity != "" {
+		report.Severity = input.Severity
+	}
+
+	// 5. 保存
+	if err := s.repo.Update(report); err != nil {
+		return nil, err
+	}
+
+	return report, nil
+}
+
+// isValidStatusTransition 校验状态流转是否合法
+func isValidStatusTransition(from, to string) bool {
+	validTransitions := map[string][]string{
+		"Pending":  {"Triaged", "Closed"},
+		"Triaged":  {"Resolved", "Closed"},
+		"Resolved": {"Closed"},
+		"Closed":   {}, // 关闭后不能再改
+	}
+
+	allowed, ok := validTransitions[from]
+	if !ok {
+		return false
+	}
+
+	for _, status := range allowed {
+		if status == to {
+			return true
+		}
+	}
+	return false
+}

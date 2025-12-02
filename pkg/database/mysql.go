@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"gorm.io/driver/postgres"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -30,19 +30,19 @@ func InitDB(cfg *config.Config) *gorm.DB {
 	}
 
 	// 3. 打开连接
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
 		Logger: gormLogger,
 	})
 
 	if err != nil {
 		// 如果连不上数据库，整个平台无法运行，直接 Panic
-		panic(fmt.Errorf(" Fatal error connecting to database: %w", err))
+		panic(fmt.Errorf("Fatal error connecting to database: %w", err))
 	}
 
 	// 4. 获取底层的 sql.DB 对象，用于设置连接池
 	sqlDB, err := db.DB()
 	if err != nil {
-		panic(fmt.Errorf(" Failed to get sql.DB: %w", err))
+		panic(fmt.Errorf("Failed to get sql.DB: %w", err))
 	}
 
 	// 5. 设置连接池参数 (非常重要！)

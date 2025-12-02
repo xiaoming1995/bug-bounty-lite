@@ -55,7 +55,7 @@ func LoadConfig() *Config {
 	}
 
 	// 简单打印一下，确认加载成功 (生产环境建议用 Logger)
-	fmt.Printf("✅ Configuration loaded successfully. Mode: %s\n", cfg.Server.Mode)
+	fmt.Printf("[OK] Configuration loaded successfully. Mode: %s\n", cfg.Server.Mode)
 
 	return &cfg
 }
