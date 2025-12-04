@@ -2,36 +2,38 @@
 
 ## 目录
 
+- [概述](#概述)
 - [基础信息](#基础信息)
-- [请求规范](#请求规范)
 - [认证说明](#认证说明)
 - [API 端点](#api-端点)
   - [认证相关](#认证相关)
   - [漏洞报告相关](#漏洞报告相关)
+  - [用户信息变更](#用户信息变更)
 - [数据模型](#数据模型)
 - [错误处理](#错误处理)
-- [curl 命令示例](#curl-命令示例)
-- [代码示例](#代码示例)
+- [快速开始](#快速开始)
+  - [curl 命令示例](#curl-命令示例)
+  - [代码示例](#代码示例)
+
+---
+
+## 概述
+
+Bug Bounty Lite 是一个轻量级的 Web 安全众测平台后端 API，提供用户认证、漏洞报告管理和用户信息变更等功能。
+
+**API 版本**: v1  
+**Base URL**: `http://localhost:8080/api/v1`  
+**协议**: HTTP/HTTPS  
+**数据格式**: JSON  
+**字符编码**: UTF-8
 
 ---
 
 ## 基础信息
 
-| 项目 | 值 |
-|------|-----|
-| Base URL | `http://localhost:8080` |
-| API 前缀 | `/api/v1` |
-| 协议 | HTTP/HTTPS |
-| 数据格式 | JSON |
-| 字符编码 | UTF-8 |
+### 请求规范
 
----
-
-## 请求规范
-
-### 通用请求头
-
-所有请求必须包含以下请求头：
+#### 通用请求头
 
 | 请求头 | 值 | 必填 | 说明 |
 |--------|-----|------|------|
@@ -39,34 +41,30 @@
 | Accept | `application/json` | 否 | 期望的响应格式 |
 | Authorization | `Bearer <token>` | 视接口而定 | JWT 认证令牌 |
 
-### 请求头示例
-
-**公开接口（无需认证）**:
-```http
-POST /api/v1/auth/register HTTP/1.1
-Host: localhost:8080
-Content-Type: application/json
-
-{"username":"test","password":"123456"}
-```
-
-**需认证接口**:
-```http
-POST /api/v1/reports HTTP/1.1
-Host: localhost:8080
-Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-
-{"title":"SQL Injection","severity":"High"}
-```
-
-### 请求体格式
+#### 请求体格式
 
 - 使用 JSON 格式
-- 字段名使用 snake_case（下划线命名）
+- 字段名使用 `snake_case`（下划线命名）
 - 字符串值使用双引号
-- 布尔值使用 true/false
-- 空值使用 null
+- 布尔值使用 `true`/`false`
+- 空值使用 `null`
+
+#### 响应格式
+
+**成功响应**:
+```json
+{
+  "message": "操作成功",
+  "data": { ... }
+}
+```
+
+**错误响应**:
+```json
+{
+  "error": "错误描述信息"
+}
+```
 
 ---
 
@@ -108,6 +106,9 @@ JWT Token 包含以下信息（Payload）：
 | `/api/v1/reports` | GET | 是 | 获取报告列表 |
 | `/api/v1/reports/:id` | GET | 是 | 获取报告详情 |
 | `/api/v1/reports/:id` | PUT | 是 | 更新报告 |
+| `/api/v1/user/info/change` | POST | 是 | 提交信息变更申请 |
+| `/api/v1/user/info/changes` | GET | 是 | 获取变更申请列表 |
+| `/api/v1/user/info/changes/:id` | GET | 是 | 获取变更申请详情 |
 
 ---
 
@@ -119,26 +120,20 @@ JWT Token 包含以下信息（Payload）：
 
 创建新用户账号。
 
-**请求**
+**接口**: `POST /api/v1/auth/register`
 
-```
-POST /api/v1/auth/register
-```
-
-**请求头**
-
+**请求头**:
 | 名称 | 值 | 必填 |
 |------|-----|------|
 | Content-Type | application/json | 是 |
 
-**请求体参数**
-
+**请求体参数**:
 | 字段 | 类型 | 必填 | 约束 | 说明 |
 |------|------|------|------|------|
 | username | string | 是 | 1-64字符 | 用户名，唯一 |
 | password | string | 是 | 最少6位 | 密码 |
 
-**请求示例**
+**请求示例**:
 ```json
 {
   "username": "whitehat_user",
@@ -146,7 +141,7 @@ POST /api/v1/auth/register
 }
 ```
 
-**响应**
+**响应示例**:
 
 成功 (201 Created):
 ```json
@@ -168,26 +163,20 @@ POST /api/v1/auth/register
 
 用户登录获取 JWT Token。
 
-**请求**
+**接口**: `POST /api/v1/auth/login`
 
-```
-POST /api/v1/auth/login
-```
-
-**请求头**
-
+**请求头**:
 | 名称 | 值 | 必填 |
 |------|-----|------|
 | Content-Type | application/json | 是 |
 
-**请求体参数**
-
+**请求体参数**:
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | username | string | 是 | 用户名 |
 | password | string | 是 | 密码 |
 
-**请求示例**
+**请求示例**:
 ```json
 {
   "username": "whitehat_user",
@@ -195,13 +184,13 @@ POST /api/v1/auth/login
 }
 ```
 
-**响应**
+**响应示例**:
 
 成功 (200 OK):
 ```json
 {
   "message": "Login successful",
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6InRlc3QiLCJyb2xlIjoid2hpdGVoYXQiLCJleHAiOjE3MzI5NTQwMDB9.xxxxx",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "user": {
     "id": 1,
     "username": "whitehat_user",
@@ -229,21 +218,15 @@ POST /api/v1/auth/login
 
 提交新的漏洞报告。
 
-**请求**
+**接口**: `POST /api/v1/reports`
 
-```
-POST /api/v1/reports
-```
-
-**请求头**
-
+**请求头**:
 | 名称 | 值 | 必填 |
 |------|-----|------|
 | Content-Type | application/json | 是 |
 | Authorization | Bearer {token} | 是 |
 
-**请求体参数**
-
+**请求体参数**:
 | 字段 | 类型 | 必填 | 约束 | 说明 |
 |------|------|------|------|------|
 | title | string | 是 | 最大255字符 | 漏洞标题 |
@@ -253,7 +236,7 @@ POST /api/v1/reports
 
 **severity 可选值**: `Low`, `Medium`, `High`, `Critical`
 
-**请求示例**
+**请求示例**:
 ```json
 {
   "title": "SQL Injection in Login Form",
@@ -263,7 +246,7 @@ POST /api/v1/reports
 }
 ```
 
-**响应**
+**响应示例**:
 
 成功 (201 Created):
 ```json
@@ -302,26 +285,25 @@ POST /api/v1/reports
 
 获取漏洞报告列表，支持分页。
 
-**请求**
+**接口**: `GET /api/v1/reports`
 
-```
-GET /api/v1/reports?page=1&page_size=10
-```
-
-**请求头**
-
+**请求头**:
 | 名称 | 值 | 必填 |
 |------|-----|------|
 | Authorization | Bearer {token} | 是 |
 
-**查询参数**
-
+**查询参数**:
 | 参数 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
 | page | integer | 否 | 1 | 页码（从1开始） |
 | page_size | integer | 否 | 10 | 每页数量（最大100） |
 
-**响应**
+**请求示例**:
+```
+GET /api/v1/reports?page=1&page_size=10
+```
+
+**响应示例**:
 
 成功 (200 OK):
 ```json
@@ -357,25 +339,24 @@ GET /api/v1/reports?page=1&page_size=10
 
 根据 ID 获取单个报告的详细信息。
 
-**请求**
+**接口**: `GET /api/v1/reports/:id`
 
-```
-GET /api/v1/reports/:id
-```
-
-**请求头**
-
+**请求头**:
 | 名称 | 值 | 必填 |
 |------|-----|------|
 | Authorization | Bearer {token} | 是 |
 
-**路径参数**
-
+**路径参数**:
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | id | integer | 是 | 报告 ID |
 
-**响应**
+**请求示例**:
+```
+GET /api/v1/reports/1
+```
+
+**响应示例**:
 
 成功 (200 OK):
 ```json
@@ -414,27 +395,20 @@ GET /api/v1/reports/:id
 
 更新报告信息或状态。
 
-**请求**
+**接口**: `PUT /api/v1/reports/:id`
 
-```
-PUT /api/v1/reports/:id
-```
-
-**请求头**
-
+**请求头**:
 | 名称 | 值 | 必填 |
 |------|-----|------|
 | Content-Type | application/json | 是 |
 | Authorization | Bearer {token} | 是 |
 
-**路径参数**
-
+**路径参数**:
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | id | integer | 是 | 报告 ID |
 
-**请求体参数**
-
+**请求体参数**:
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | title | string | 否 | 漏洞标题 |
@@ -447,7 +421,7 @@ PUT /api/v1/reports/:id
 
 **status 可选值**: `Pending`, `Triaged`, `Resolved`, `Closed`
 
-**请求示例**
+**请求示例**:
 ```json
 {
   "status": "Triaged",
@@ -455,7 +429,7 @@ PUT /api/v1/reports/:id
 }
 ```
 
-**响应**
+**响应示例**:
 
 成功 (200 OK):
 ```json
@@ -488,6 +462,153 @@ PUT /api/v1/reports/:id
 
 ---
 
+### 用户信息变更
+
+#### 7. 提交信息变更申请
+
+提交用户信息变更申请（手机号、邮箱、姓名），需要后台审核。
+
+**接口**: `POST /api/v1/user/info/change`
+
+**请求头**:
+| 名称 | 值 | 必填 |
+|------|-----|------|
+| Content-Type | application/json | 是 |
+| Authorization | Bearer {token} | 是 |
+
+**请求体参数**:
+| 字段 | 类型 | 必填 | 约束 | 说明 |
+|------|------|------|------|------|
+| phone | string | 否 | 最大20字符 | 手机号 |
+| email | string | 否 | 邮箱格式 | 邮箱 |
+| name | string | 否 | 最大50字符 | 姓名 |
+
+> **注意**: 至少需要提供一个要变更的字段（phone、email 或 name）
+
+**请求示例**:
+```json
+{
+  "phone": "13800138000",
+  "email": "newemail@example.com",
+  "name": "张三"
+}
+```
+
+**响应示例**:
+
+成功 (201 Created):
+```json
+{
+  "data": {
+    "id": 1,
+    "user_id": 1,
+    "phone": "13800138000",
+    "email": "newemail@example.com",
+    "name": "张三",
+    "status": "pending",
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  }
+}
+```
+
+失败 (400 Bad Request):
+```json
+{
+  "error": "至少需要提供一个要变更的字段（手机号、邮箱或姓名）"
+}
+```
+
+---
+
+#### 8. 获取变更申请列表
+
+获取当前用户的所有信息变更申请。
+
+**接口**: `GET /api/v1/user/info/changes`
+
+**请求头**:
+| 名称 | 值 | 必填 |
+|------|-----|------|
+| Authorization | Bearer {token} | 是 |
+
+**响应示例**:
+
+成功 (200 OK):
+```json
+{
+  "message": "获取成功",
+  "data": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "phone": "13800138000",
+      "email": "newemail@example.com",
+      "name": "张三",
+      "status": "pending",
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+#### 9. 获取变更申请详情
+
+根据 ID 获取单个变更申请的详细信息。
+
+**接口**: `GET /api/v1/user/info/changes/:id`
+
+**请求头**:
+| 名称 | 值 | 必填 |
+|------|-----|------|
+| Authorization | Bearer {token} | 是 |
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | integer | 是 | 变更申请 ID |
+
+**请求示例**:
+```
+GET /api/v1/user/info/changes/1
+```
+
+**响应示例**:
+
+成功 (200 OK):
+```json
+{
+  "message": "获取成功",
+  "data": {
+    "id": 1,
+    "user_id": 1,
+    "phone": "13800138000",
+    "email": "newemail@example.com",
+    "name": "张三",
+    "status": "pending",
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  }
+}
+```
+
+失败 (400 Bad Request):
+```json
+{
+  "error": "变更申请不存在或无权限访问"
+}
+```
+
+**状态说明**:
+- `pending`: 待审核
+- `approved`: 已通过（审核通过后，用户信息会被更新）
+- `rejected`: 已拒绝
+
+---
+
 ## 数据模型
 
 ### User（用户对象）
@@ -497,6 +618,9 @@ interface User {
   id: number;
   username: string;
   role: 'whitehat' | 'vendor' | 'admin';
+  phone?: string;
+  email?: string;
+  name?: string;
   created_at: string;  // ISO 8601 格式
   updated_at: string;  // ISO 8601 格式
 }
@@ -519,12 +643,36 @@ interface Report {
 }
 ```
 
-### 状态说明
+### UserInfoChangeRequest（用户信息变更申请对象）
+
+```typescript
+interface UserInfoChangeRequest {
+  id: number;
+  user_id: number;
+  phone?: string;
+  email?: string;
+  name?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  reviewed_at?: string;  // ISO 8601 格式
+  reviewer_id?: number;
+  review_note?: string;
+  created_at: string;  // ISO 8601 格式
+  updated_at: string;  // ISO 8601 格式
+}
+```
+
+### 枚举值说明
 
 **报告状态流转**:
 ```
 Pending (待审) -> Triaged (已确认) -> Resolved (已修复) -> Closed (关闭)
 ```
+
+**报告危害等级**:
+- `Low`: 低危
+- `Medium`: 中危
+- `High`: 高危
+- `Critical`: 严重
 
 **用户角色**:
 | 角色 | 说明 | 权限 |
@@ -532,6 +680,11 @@ Pending (待审) -> Triaged (已确认) -> Resolved (已修复) -> Closed (关�
 | whitehat | 白帽子（默认） | 提交报告、查看报告、更新自己的报告 |
 | vendor | 厂商 | 查看报告、更新报告状态 |
 | admin | 管理员 | 所有权限 |
+
+**变更申请状态**:
+- `pending`: 待审核
+- `approved`: 已通过
+- `rejected`: 已拒绝
 
 ---
 
@@ -573,12 +726,15 @@ Pending (待审) -> Triaged (已确认) -> Resolved (已修复) -> Closed (关�
 | `Report not found` | 404 | 报告不存在 |
 | `invalid status transition` | 400 | 非法的状态流转 |
 | `only admin or vendor can change status` | 400 | 无权修改状态 |
+| `至少需要提供一个要变更的字段（手机号、邮箱或姓名）` | 400 | 变更申请至少需要一个字段 |
 
 ---
 
-## curl 命令示例
+## 快速开始
 
-### 1. 用户注册
+### curl 命令示例
+
+#### 1. 用户注册
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/auth/register \
@@ -586,7 +742,7 @@ curl -X POST http://localhost:8080/api/v1/auth/register \
   -d '{"username":"testuser","password":"123456"}'
 ```
 
-### 2. 用户登录
+#### 2. 用户登录
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/auth/login \
@@ -594,7 +750,7 @@ curl -X POST http://localhost:8080/api/v1/auth/login \
   -d '{"username":"testuser","password":"123456"}'
 ```
 
-### 3. 提交漏洞报告
+#### 3. 提交漏洞报告
 
 ```bash
 # 替换 <TOKEN> 为登录返回的 token
@@ -604,27 +760,50 @@ curl -X POST http://localhost:8080/api/v1/reports \
   -d '{"title":"SQL Injection","description":"Found SQL injection in login","type":"SQL Injection","severity":"High"}'
 ```
 
-### 4. 获取报告列表
+#### 4. 获取报告列表
 
 ```bash
 curl -X GET "http://localhost:8080/api/v1/reports?page=1&page_size=10" \
   -H "Authorization: Bearer <TOKEN>"
 ```
 
-### 5. 获取报告详情
+#### 5. 获取报告详情
 
 ```bash
 curl -X GET http://localhost:8080/api/v1/reports/1 \
   -H "Authorization: Bearer <TOKEN>"
 ```
 
-### 6. 更新报告
+#### 6. 更新报告
 
 ```bash
 curl -X PUT http://localhost:8080/api/v1/reports/1 \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <TOKEN>" \
   -d '{"severity":"Critical","status":"Triaged"}'
+```
+
+#### 7. 提交信息变更申请
+
+```bash
+curl -X POST http://localhost:8080/api/v1/user/info/change \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{"phone":"13800138000","email":"newemail@example.com","name":"张三"}'
+```
+
+#### 8. 获取变更申请列表
+
+```bash
+curl -X GET http://localhost:8080/api/v1/user/info/changes \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+#### 9. 获取变更申请详情
+
+```bash
+curl -X GET http://localhost:8080/api/v1/user/info/changes/1 \
+  -H "Authorization: Bearer <TOKEN>"
 ```
 
 ### curl 注意事项
@@ -636,9 +815,9 @@ curl -X PUT http://localhost:8080/api/v1/reports/1 \
 
 ---
 
-## 代码示例
+### 代码示例
 
-### JavaScript / TypeScript
+#### JavaScript / TypeScript (Fetch API)
 
 ```typescript
 const BASE_URL = 'http://localhost:8080/api/v1';
@@ -729,9 +908,39 @@ async function updateReport(id: number, data: {
   });
   return await response.json();
 }
+
+// 提交信息变更申请
+async function submitInfoChange(data: {
+  phone?: string;
+  email?: string;
+  name?: string;
+}) {
+  const response = await fetch(`${BASE_URL}/user/info/change`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  return await response.json();
+}
+
+// 获取变更申请列表
+async function getInfoChanges() {
+  const response = await fetch(`${BASE_URL}/user/info/changes`, {
+    headers: getAuthHeaders(),
+  });
+  return await response.json();
+}
+
+// 获取变更申请详情
+async function getInfoChange(id: number) {
+  const response = await fetch(`${BASE_URL}/user/info/changes/${id}`, {
+    headers: getAuthHeaders(),
+  });
+  return await response.json();
+}
 ```
 
-### 使用 Axios
+#### 使用 Axios
 
 ```typescript
 import axios from 'axios';
@@ -798,9 +1007,22 @@ export const updateReport = (id: number, data: {
   severity?: string;
   status?: string;
 }) => api.put(`/reports/${id}`, data);
+
+// 提交信息变更申请
+export const submitInfoChange = (data: {
+  phone?: string;
+  email?: string;
+  name?: string;
+}) => api.post('/user/info/change', data);
+
+// 获取变更申请列表
+export const getInfoChanges = () => api.get('/user/info/changes');
+
+// 获取变更申请详情
+export const getInfoChange = (id: number) => api.get(`/user/info/changes/${id}`);
 ```
 
 ---
 
-**文档版本**: 2.1.0  
-**更新日期**: 2024
+**文档版本**: 2.2.0  
+**最后更新**: 2024
