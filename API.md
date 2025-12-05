@@ -275,50 +275,19 @@ JWT Token 包含以下信息（Payload）：
 
 **响应示例**:
 
-成功 (201 Created):
+成功 (200 OK):
 ```json
 {
-  "data": {
-    "id": 1,
-    "project_id": 1,
-    "project": {
-      "id": 1,
-      "name": "某公司官网",
-      "status": "active"
-    },
-    "vulnerability_name": "SQL注入漏洞",
-    "vulnerability_type_id": 1,
-    "vulnerability_type": {
-      "id": 1,
-      "config_key": "SQL_INJECTION",
-      "config_value": "SQL注入",
-      "description": "SQL注入漏洞"
-    },
-    "vulnerability_impact": "可能导致数据泄露",
-    "self_assessment": "高危漏洞",
-    "vulnerability_url": "https://example.com/vuln",
-    "vulnerability_detail": "详细描述漏洞情况...",
-    "attachment_url": "https://example.com/uploads/reports/2024/01/abc123.pdf",
-    "title": "SQL注入漏洞",
-    "description": "详细描述漏洞情况...",
-    "type": "SQL_INJECTION",
-    "severity": "High",
-    "status": "Pending",
-    "author_id": 1,
-    "author": {
-      "id": 1,
-      "username": "whitehat_user"
-    },
-    "created_at": "2024-01-01T00:00:00Z",
-    "updated_at": "2024-01-01T00:00:00Z"
-  }
+  "code": 200,
+  "message": "漏洞报告提交成功"
 }
 ```
 
 失败 (400 Bad Request):
 ```json
 {
-  "error": "项目ID不能为空"
+  "code": 400,
+  "message": "项目ID不能为空"
 }
 ```
 
@@ -326,7 +295,8 @@ JWT Token 包含以下信息（Payload）：
 
 ```json
 {
-  "error": "漏洞名称不能为空"
+  "code": 400,
+  "message": "漏洞名称不能为空"
 }
 ```
 
@@ -334,14 +304,25 @@ JWT Token 包含以下信息（Payload）：
 
 ```json
 {
-  "error": "漏洞类型不能为空"
+  "code": 400,
+  "message": "漏洞类型不能为空"
+}
+```
+
+或
+
+```json
+{
+  "code": 400,
+  "message": "请求参数错误: ..."
 }
 ```
 
 失败 (401 Unauthorized):
 ```json
 {
-  "error": "Authorization header is required"
+  "code": 401,
+  "message": "用户未认证"
 }
 ```
 
@@ -1409,6 +1390,14 @@ curl -X POST http://localhost:8080/api/v1/reports \
   }'
 ```
 
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "漏洞报告提交成功"
+}
+```
+
 #### 6. 获取报告列表
 
 ```bash
@@ -1599,6 +1588,7 @@ async function uploadFile(file: File) {
 }
 
 // 提交漏洞报告
+// 成功时返回 (200 OK): { code: 200, message: "漏洞报告提交成功" }
 async function submitReport(report: {
   project_id: number;
   vulnerability_name: string;
@@ -1769,6 +1759,7 @@ export const uploadFile = (file: File) => {
 };
 
 // 提交报告
+// 成功时返回 (200 OK): { code: 200, message: "漏洞报告提交成功" }
 export const submitReport = (report: {
   project_id: number;
   vulnerability_name: string;

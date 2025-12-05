@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bug-bounty-lite/internal/domain"
+	"bug-bounty-lite/pkg/response"
 	"net/http"
 	"strconv"
 
@@ -55,14 +56,14 @@ type UpdateReportRequest struct {
 func (h *ReportHandler) CreateHandler(c *gin.Context) {
 	var req CreateReportRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, "请求参数错误: "+err.Error())
 		return
 	}
 
 	// 从 Context 中获取当前登录用户 ID（由 AuthMiddleware 设置）
 	userID, exists := c.Get("userID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		response.Unauthorized(c, "用户未认证")
 		return
 	}
 
@@ -90,11 +91,12 @@ func (h *ReportHandler) CreateHandler(c *gin.Context) {
 	}
 
 	if err := h.Service.SubmitReport(report); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"data": report})
+	// 成功时只返回提示语，不返回报告数据（统一使用 200 状态码）
+	response.SuccessWithMessage(c, "漏洞报告提交成功", nil)
 }
 
 // ListHandler 获取列表
