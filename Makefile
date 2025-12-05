@@ -1,4 +1,4 @@
-.PHONY: run run-migrate build test clean docker-build docker-run tidy lint migrate migrate-status help
+.PHONY: run run-migrate build test clean docker-build docker-run tidy lint migrate migrate-status seed seed-force help
 
 # 默认目标
 .DEFAULT_GOAL := help
@@ -37,6 +37,14 @@ migrate:
 ## migrate-status: 查看迁移状态
 migrate-status:
 	go run cmd/migrate/main.go -status
+
+## seed: 填充测试数据
+seed:
+	go run cmd/seed/main.go
+
+## seed-force: 强制填充测试数据（跳过已存在的数据）
+seed-force:
+	go run cmd/seed/main.go -force
 
 # ===========================
 # 测试命令
@@ -110,6 +118,8 @@ help:
 	@echo "Database:"
 	@echo "  migrate        Run database migrations"
 	@echo "  migrate-status Show migration status"
+	@echo "  seed           Seed test data"
+	@echo "  seed-force     Force seed test data (skip existing)"
 	@echo ""
 	@echo "Testing:"
 	@echo "  test           Run tests"

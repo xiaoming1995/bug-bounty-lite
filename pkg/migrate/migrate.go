@@ -286,33 +286,31 @@ func (m *Migrator) Status() {
 
 // seedInitialData 添加初始数据
 func (m *Migrator) seedInitialData() error {
-	// 检查是否已有漏洞类型数据
+	// 1. 插入漏洞类型初始数据
 	var count int64
 	m.db.Model(&domain.SystemConfig{}).Where("config_type = ?", "vulnerability_type").Count(&count)
-	if count > 0 {
-		log.Println("[INFO] Vulnerability types already exist, skipping seed")
-		return nil
-	}
-
-	// 插入漏洞类型初始数据
-	vulnerabilityTypes := []domain.SystemConfig{
-		{ConfigType: "vulnerability_type", ConfigKey: "SQL_INJECTION", ConfigValue: "SQL注入", Description: "SQL注入漏洞", SortOrder: 1, Status: "active"},
-		{ConfigType: "vulnerability_type", ConfigKey: "XSS", ConfigValue: "XSS跨站脚本", Description: "跨站脚本攻击", SortOrder: 2, Status: "active"},
-		{ConfigType: "vulnerability_type", ConfigKey: "CSRF", ConfigValue: "CSRF跨站请求伪造", Description: "跨站请求伪造", SortOrder: 3, Status: "active"},
-		{ConfigType: "vulnerability_type", ConfigKey: "FILE_UPLOAD", ConfigValue: "文件上传漏洞", Description: "文件上传漏洞", SortOrder: 4, Status: "active"},
-		{ConfigType: "vulnerability_type", ConfigKey: "COMMAND_INJECTION", ConfigValue: "命令执行", Description: "命令注入漏洞", SortOrder: 5, Status: "active"},
-		{ConfigType: "vulnerability_type", ConfigKey: "INFORMATION_DISCLOSURE", ConfigValue: "信息泄露", Description: "敏感信息泄露", SortOrder: 6, Status: "active"},
-		{ConfigType: "vulnerability_type", ConfigKey: "PRIVILEGE_ESCALATION", ConfigValue: "权限绕过", Description: "权限提升/绕过", SortOrder: 7, Status: "active"},
-		{ConfigType: "vulnerability_type", ConfigKey: "OTHER", ConfigValue: "其他", Description: "其他类型漏洞", SortOrder: 99, Status: "active"},
-	}
-
-	for _, vt := range vulnerabilityTypes {
-		if err := m.db.Create(&vt).Error; err != nil {
-			log.Printf("[WARN] Failed to create vulnerability type %s: %v", vt.ConfigKey, err)
+	if count == 0 {
+		vulnerabilityTypes := []domain.SystemConfig{
+			{ConfigType: "vulnerability_type", ConfigKey: "SQL_INJECTION", ConfigValue: "SQL注入", Description: "SQL注入漏洞", SortOrder: 1, Status: "active"},
+			{ConfigType: "vulnerability_type", ConfigKey: "XSS", ConfigValue: "XSS跨站脚本", Description: "跨站脚本攻击", SortOrder: 2, Status: "active"},
+			{ConfigType: "vulnerability_type", ConfigKey: "CSRF", ConfigValue: "CSRF跨站请求伪造", Description: "跨站请求伪造", SortOrder: 3, Status: "active"},
+			{ConfigType: "vulnerability_type", ConfigKey: "FILE_UPLOAD", ConfigValue: "文件上传漏洞", Description: "文件上传漏洞", SortOrder: 4, Status: "active"},
+			{ConfigType: "vulnerability_type", ConfigKey: "COMMAND_INJECTION", ConfigValue: "命令执行", Description: "命令注入漏洞", SortOrder: 5, Status: "active"},
+			{ConfigType: "vulnerability_type", ConfigKey: "INFORMATION_DISCLOSURE", ConfigValue: "信息泄露", Description: "敏感信息泄露", SortOrder: 6, Status: "active"},
+			{ConfigType: "vulnerability_type", ConfigKey: "PRIVILEGE_ESCALATION", ConfigValue: "权限绕过", Description: "权限提升/绕过", SortOrder: 7, Status: "active"},
+			{ConfigType: "vulnerability_type", ConfigKey: "OTHER", ConfigValue: "其他", Description: "其他类型漏洞", SortOrder: 99, Status: "active"},
 		}
+
+		for _, vt := range vulnerabilityTypes {
+			if err := m.db.Create(&vt).Error; err != nil {
+				log.Printf("[WARN] Failed to create vulnerability type %s: %v", vt.ConfigKey, err)
+			}
+		}
+		log.Println("[INFO] Seeded vulnerability types successfully")
+	} else {
+		log.Println("[INFO] Vulnerability types already exist, skipping seed")
 	}
 
-	log.Println("[INFO] Seeded vulnerability types successfully")
 	return nil
 }
 
