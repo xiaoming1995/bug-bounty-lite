@@ -18,19 +18,37 @@ func NewReportHandler(s domain.ReportService) *ReportHandler {
 
 // CreateReportRequest 创建报告请求 DTO
 type CreateReportRequest struct {
-	Title       string `json:"title" binding:"required,max=255"`
+	ProjectID           uint   `json:"project_id" binding:"required"`
+	VulnerabilityName   string `json:"vulnerability_name" binding:"required,max=255"`
+	VulnerabilityTypeID uint   `json:"vulnerability_type_id" binding:"required"`
+	VulnerabilityImpact string `json:"vulnerability_impact"`
+	SelfAssessment      string `json:"self_assessment"`
+	VulnerabilityURL    string `json:"vulnerability_url" binding:"omitempty,url"`
+	VulnerabilityDetail string `json:"vulnerability_detail"`
+	AttachmentURL       string `json:"attachment_url" binding:"omitempty,url"`
+	Severity            string `json:"severity" binding:"omitempty,oneof=Low Medium High Critical"`
+	// 保留字段（向后兼容）
+	Title       string `json:"title" binding:"omitempty,max=255"`
 	Description string `json:"description"`
 	Type        string `json:"type" binding:"omitempty,max=50"`
-	Severity    string `json:"severity" binding:"omitempty,oneof=Low Medium High Critical"`
 }
 
 // UpdateReportRequest 更新报告请求 DTO
 type UpdateReportRequest struct {
+	ProjectID           uint   `json:"project_id"`
+	VulnerabilityName   string `json:"vulnerability_name" binding:"omitempty,max=255"`
+	VulnerabilityTypeID uint   `json:"vulnerability_type_id"`
+	VulnerabilityImpact string `json:"vulnerability_impact"`
+	SelfAssessment      string `json:"self_assessment"`
+	VulnerabilityURL    string `json:"vulnerability_url" binding:"omitempty,url"`
+	VulnerabilityDetail string `json:"vulnerability_detail"`
+	AttachmentURL       string `json:"attachment_url" binding:"omitempty,url"`
+	Severity            string `json:"severity" binding:"omitempty,oneof=Low Medium High Critical"`
+	Status              string `json:"status" binding:"omitempty,oneof=Pending Triaged Resolved Closed"`
+	// 保留字段（向后兼容）
 	Title       string `json:"title" binding:"omitempty,max=255"`
 	Description string `json:"description"`
 	Type        string `json:"type" binding:"omitempty,max=50"`
-	Severity    string `json:"severity" binding:"omitempty,oneof=Low Medium High Critical"`
-	Status      string `json:"status" binding:"omitempty,oneof=Pending Triaged Resolved Closed"`
 }
 
 // CreateHandler 提交漏洞
@@ -50,11 +68,20 @@ func (h *ReportHandler) CreateHandler(c *gin.Context) {
 
 	// 构建 Report 实体
 	report := &domain.Report{
+		ProjectID:           req.ProjectID,
+		VulnerabilityName:   req.VulnerabilityName,
+		VulnerabilityTypeID: req.VulnerabilityTypeID,
+		VulnerabilityImpact: req.VulnerabilityImpact,
+		SelfAssessment:      req.SelfAssessment,
+		VulnerabilityURL:    req.VulnerabilityURL,
+		VulnerabilityDetail: req.VulnerabilityDetail,
+		AttachmentURL:       req.AttachmentURL,
+		Severity:            req.Severity,
+		AuthorID:            userID.(uint),
+		// 保留字段（向后兼容）
 		Title:       req.Title,
 		Description: req.Description,
 		Type:        req.Type,
-		Severity:    req.Severity,
-		AuthorID:    userID.(uint),
 	}
 
 	// 设置默认值
@@ -127,11 +154,20 @@ func (h *ReportHandler) UpdateHandler(c *gin.Context) {
 
 	// 调用 Service 更新
 	report, err := h.Service.UpdateReport(uint(id), userID.(uint), role.(string), &domain.ReportUpdateInput{
+		ProjectID:           req.ProjectID,
+		VulnerabilityName:   req.VulnerabilityName,
+		VulnerabilityTypeID: req.VulnerabilityTypeID,
+		VulnerabilityImpact: req.VulnerabilityImpact,
+		SelfAssessment:      req.SelfAssessment,
+		VulnerabilityURL:    req.VulnerabilityURL,
+		VulnerabilityDetail: req.VulnerabilityDetail,
+		AttachmentURL:       req.AttachmentURL,
+		Severity:            req.Severity,
+		Status:              req.Status,
+		// 保留字段（向后兼容）
 		Title:       req.Title,
 		Description: req.Description,
 		Type:        req.Type,
-		Severity:    req.Severity,
-		Status:      req.Status,
 	})
 
 	if err != nil {

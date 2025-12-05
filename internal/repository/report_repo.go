@@ -21,9 +21,11 @@ func (r *reportRepo) Create(report *domain.Report) error {
 // FindByID 查找详情
 func (r *reportRepo) FindByID(id uint) (*domain.Report, error) {
 	var report domain.Report
-	// Preload("Author") 自动填充 Author 字段
-	// 这样我们拿到 Report 时，Author.Username 也有值
-	err := r.db.Preload("Author").First(&report, id).Error
+	// Preload 关联查询：Author、Project、VulnerabilityType
+	err := r.db.Preload("Author").
+		Preload("Project").
+		Preload("VulnerabilityType").
+		First(&report, id).Error
 	return &report, err
 }
 
@@ -46,6 +48,8 @@ func (r *reportRepo) List(page, pageSize int) ([]domain.Report, int64, error) {
 	// 4. 查当前页数据
 	// Order("id desc") 保证最新的漏洞显示在最前面
 	err := query.Preload("Author").
+		Preload("Project").
+		Preload("VulnerabilityType").
 		Order("id desc").
 		Offset(offset).
 		Limit(pageSize).

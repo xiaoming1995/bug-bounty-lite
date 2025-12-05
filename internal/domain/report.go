@@ -10,14 +10,41 @@ type Report struct {
 	CreatedAt time.Time `gorm:"comment:创建时间" json:"created_at"`
 	UpdatedAt time.Time `gorm:"comment:更新时间" json:"updated_at"`
 
-	// 漏洞标题
-	Title string `gorm:"size:255;not null;comment:漏洞标题" json:"title"`
+	// 关联项目（必填）
+	ProjectID uint `gorm:"not null;index;comment:关联项目ID(必填，关联projects表)" json:"project_id"`
+	Project   Project `gorm:"foreignKey:ProjectID" json:"project,omitempty"`
 
-	// 漏洞描述 (Text 类型，支持长文本)
-	Description string `gorm:"type:text;comment:漏洞描述" json:"description"`
+	// 漏洞名称（必填）
+	VulnerabilityName string `gorm:"size:255;not null;comment:漏洞名称(必填，文本输入)" json:"vulnerability_name"`
 
-	// 漏洞类型 (如: SQL Injection, XSS)
-	Type string `gorm:"size:50;comment:漏洞类型(如XSS/SQLi/CSRF)" json:"type"`
+	// 关联漏洞类型配置（必填）
+	VulnerabilityTypeID uint `gorm:"not null;index;comment:关联漏洞类型配置ID(必填，关联system_configs表，config_type='vulnerability_type')" json:"vulnerability_type_id"`
+	VulnerabilityType   SystemConfig `gorm:"foreignKey:VulnerabilityTypeID" json:"vulnerability_type,omitempty"`
+
+	// 漏洞的危害
+	VulnerabilityImpact string `gorm:"type:text;comment:漏洞的危害(文本输入，描述漏洞可能造成的危害)" json:"vulnerability_impact"`
+
+	// 危害自评
+	SelfAssessment string `gorm:"type:text;comment:危害自评(文本输入，提交者对漏洞危害的自我评估)" json:"self_assessment"`
+
+	// 漏洞链接
+	VulnerabilityURL string `gorm:"size:500;comment:漏洞链接(URL格式，指向漏洞相关页面)" json:"vulnerability_url"`
+
+	// 漏洞详情
+	VulnerabilityDetail string `gorm:"type:text;comment:漏洞详情(文本输入，详细描述漏洞情况)" json:"vulnerability_detail"`
+
+	// 附件地址
+	AttachmentURL string `gorm:"size:500;comment:附件地址(文件上传后的URL，单个文件，后续可扩展为多个)" json:"attachment_url"`
+
+	// ========== 保留字段（向后兼容） ==========
+	// 漏洞标题（保留字段，与vulnerability_name同步）
+	Title string `gorm:"size:255;not null;comment:漏洞标题(保留字段，与vulnerability_name同步，用于向后兼容)" json:"title"`
+
+	// 漏洞描述（保留字段，与vulnerability_detail同步）
+	Description string `gorm:"type:text;comment:漏洞描述(保留字段，与vulnerability_detail同步，用于向后兼容)" json:"description"`
+
+	// 漏洞类型（保留字段，从vulnerability_type配置同步）
+	Type string `gorm:"size:50;comment:漏洞类型(保留字段，从vulnerability_type配置同步，用于向后兼容)" json:"type"`
 
 	// 危害等级: Low, Medium, High, Critical
 	Severity string `gorm:"size:20;default:'Low';comment:危害等级(Low/Medium/High/Critical)" json:"severity"`
@@ -46,11 +73,19 @@ type ReportRepository interface {
 
 // ReportUpdateInput 更新报告输入
 type ReportUpdateInput struct {
-	Title       string
-	Description string
-	Type        string
-	Severity    string
-	Status      string
+	ProjectID           uint
+	VulnerabilityName    string
+	VulnerabilityTypeID  uint
+	VulnerabilityImpact string
+	SelfAssessment      string
+	VulnerabilityURL    string
+	VulnerabilityDetail string
+	AttachmentURL       string
+	Title               string
+	Description         string
+	Type                string
+	Severity            string
+	Status              string
 }
 
 // ReportService 业务逻辑接口定义

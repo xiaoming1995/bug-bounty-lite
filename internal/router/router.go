@@ -25,19 +25,24 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 	r.SetTrustedProxies(nil)
 
 	// ===========================
-	// 1. 全局中间件
+	// 1. 静态文件服务（用于访问上传的文件）
+	// ===========================
+	r.Static("/uploads", "./uploads")
+
+	// ===========================
+	// 2. 全局中间件
 	// ===========================
 	r.Use(gin.Recovery())
 	r.Use(middleware.CORSMiddleware())
 	r.Use(middleware.LoggerMiddleware())
 
 	// ===========================
-	// 2. 初始化 JWT 管理器
+	// 3. 初始化 JWT 管理器
 	// ===========================
 	jwtManager := jwt.NewJWTManager(cfg.JWT.Secret, cfg.JWT.Expire)
 
 	// ===========================
-	// 3. 依赖注入 (组装层)
+	// 4. 依赖注入 (组装层)
 	// ===========================
 
 	// User 模块
@@ -55,8 +60,21 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 	userInfoChangeService := service.NewUserInfoChangeService(userInfoChangeRepo)
 	userInfoChangeHandler := handler.NewUserInfoChangeHandler(userInfoChangeService)
 
+	// Project 模块
+	projectRepo := repository.NewProjectRepo(db)
+	projectService := service.NewProjectService(projectRepo)
+	projectHandler := handler.NewProjectHandler(projectService)
+
+	// SystemConfig 模块
+	systemConfigRepo := repository.NewSystemConfigRepo(db)
+	systemConfigService := service.NewSystemConfigService(systemConfigRepo)
+	systemConfigHandler := handler.NewSystemConfigHandler(systemConfigService)
+
+	// Upload 模块
+	uploadHandler := handler.NewUploadHandler()
+
 	// ===========================
-	// 4. 注册路由
+	// 5. 注册路由
 	// ===========================
 
 	api := r.Group("/api/v1")
@@ -85,6 +103,35 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 			userInfo.POST("/change", userInfoChangeHandler.SubmitChangeRequest)   // 提交变更申请
 			userInfo.GET("/changes", userInfoChangeHandler.GetUserChangeRequests) // 获取变更申请列表
 			userInfo.GET("/changes/:id", userInfoChangeHandler.GetChangeRequest)  // 获取变更申请详情
+		}
+
+		// 需要认证的路由 - Projects
+		projects := api.Group("/projects")
+		projects.Use(middleware.AuthMiddleware(jwtManager))
+		{
+			projects.POST("", projectHandler.CreateHandler)       // 创建项目（仅admin）
+			projects.GET("", projectHandler.ListHandler)          // 获取项目列表
+			projects.GET("/:id", projectHandler.GetHandler)       // 获取项目详情
+			projects.PUT("/:id", projectHandler.UpdateHandler)    // 更新项目（仅admin）
+			projects.DELETE("/:id", projectHandler.DeleteHandler) // 删除项目（仅admin）
+		}
+
+		// 需要认证的路由 - System Configs
+		configs := api.Group("/configs")
+		configs.Use(middleware.AuthMiddleware(jwtManager))
+		{
+			configs.GET("/:type", systemConfigHandler.GetConfigsByTypeHandler)    // 获取配置列表
+			configs.GET("/:type/:id", systemConfigHandler.GetConfigHandler)       // 获取配置详情
+			configs.POST("/:type", systemConfigHandler.CreateConfigHandler)       // 创建配置（仅admin）
+			configs.PUT("/:type/:id", systemConfigHandler.UpdateConfigHandler)    // 更新配置（仅admin）
+			configs.DELETE("/:type/:id", systemConfigHandler.DeleteConfigHandler) // 删除配置（仅admin）
+		}
+
+		// 需要认证的路由 - Upload
+		upload := api.Group("/upload")
+		upload.Use(middleware.AuthMiddleware(jwtManager))
+		{
+			upload.POST("", uploadHandler.UploadFileHandler) // 上传文件
 		}
 	}
 

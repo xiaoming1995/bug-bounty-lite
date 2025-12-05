@@ -5,10 +5,13 @@
 ## ✨ 特性
 
 - ✅ **用户认证系统** - JWT 认证，支持用户注册/登录
-- ✅ **漏洞报告管理** - 完整的 CRUD 操作，支持分页查询
+- ✅ **漏洞报告管理** - 完整的 CRUD 操作，支持分页查询，关联项目和漏洞类型
+- ✅ **项目管理** - 项目资料管理，支持项目创建、查看、更新、删除
+- ✅ **系统配置管理** - 通用配置表设计，支持漏洞类型等各类配置
+- ✅ **文件上传** - 支持文件上传功能，用于报告附件等
 - ✅ **用户信息变更** - 信息变更申请流程，支持后台审核
 - ✅ **角色权限管理** - 白帽子/厂商/管理员三种角色
-- ✅ **数据库迁移** - 基于 GORM 的自动迁移工具
+- ✅ **数据库迁移** - 基于 GORM 的自动迁移工具，支持表注释和字段注释
 - ✅ **统一响应格式** - 标准化的 API 响应结构
 - ✅ **CORS 支持** - 跨域资源共享配置
 - ✅ **Clean Architecture** - 清晰的分层架构设计
@@ -169,10 +172,15 @@ bug-bounty-lite/
 │   ├── domain/            # 领域模型和接口
 │   │   ├── user.go
 │   │   ├── report.go
+│   │   ├── project.go
+│   │   ├── system_config.go
 │   │   └── user_info_change.go
 │   ├── handler/           # HTTP 处理器层
 │   │   ├── user_handler.go
 │   │   ├── report_handler.go
+│   │   ├── project_handler.go
+│   │   ├── system_config_handler.go
+│   │   ├── upload_handler.go
 │   │   └── user_info_change_handler.go
 │   ├── middleware/        # 中间件
 │   │   ├── auth.go        # JWT 认证中间件
@@ -181,19 +189,24 @@ bug-bounty-lite/
 │   ├── repository/        # 数据访问层
 │   │   ├── user_repo.go
 │   │   ├── report_repo.go
+│   │   ├── project_repo.go
+│   │   ├── system_config_repo.go
 │   │   └── user_info_change_repo.go
 │   ├── router/            # 路由配置
 │   │   └── router.go
 │   └── service/           # 业务逻辑层
 │       ├── user_service.go
 │       ├── report_service.go
+│       ├── project_service.go
+│       ├── system_config_service.go
 │       └── user_info_change_service.go
 ├── pkg/                   # 可复用的公共包
 │   ├── config/            # 配置加载
 │   ├── database/          # 数据库连接
 │   ├── jwt/               # JWT 认证
 │   ├── migrate/           # 迁移工具
-│   └── response/          # 统一响应格式
+│   ├── response/          # 统一响应格式
+│   └── upload/            # 文件上传工具
 ├── Dockerfile             # Docker 镜像构建文件
 ├── Makefile               # 构建脚本
 ├── go.mod                 # Go 模块依赖
@@ -252,10 +265,27 @@ export JWT_SECRET="your-secret-key"
 - `POST /api/v1/auth/login` - 用户登录
 
 #### 漏洞报告相关（需认证）
-- `POST /api/v1/reports` - 提交漏洞报告
-- `GET /api/v1/reports` - 获取报告列表（支持分页）
+- `POST /api/v1/reports` - 提交漏洞报告（支持项目关联、漏洞类型等新字段）
+- `GET /api/v1/reports` - 获取报告列表（支持关联查询）
 - `GET /api/v1/reports/:id` - 获取报告详情
 - `PUT /api/v1/reports/:id` - 更新报告
+
+#### 项目管理（需认证）
+- `POST /api/v1/projects` - 创建项目（仅admin）
+- `GET /api/v1/projects` - 获取项目列表
+- `GET /api/v1/projects/:id` - 获取项目详情
+- `PUT /api/v1/projects/:id` - 更新项目（仅admin）
+- `DELETE /api/v1/projects/:id` - 删除项目（仅admin）
+
+#### 系统配置（需认证）
+- `GET /api/v1/configs/:type` - 获取配置列表（如：/configs/vulnerability_type）
+- `GET /api/v1/configs/:type/:id` - 获取配置详情
+- `POST /api/v1/configs/:type` - 创建配置（仅admin）
+- `PUT /api/v1/configs/:type/:id` - 更新配置（仅admin）
+- `DELETE /api/v1/configs/:type/:id` - 删除配置（仅admin）
+
+#### 文件上传（需认证）
+- `POST /api/v1/upload` - 上传文件（单文件，最大10MB）
 
 #### 用户信息变更（需认证）
 - `POST /api/v1/user/info/change` - 提交信息变更申请
@@ -427,5 +457,20 @@ MIT License
 
 ---
 
-**版本**: 1.0.0  
+**版本**: 2.0.0  
 **最后更新**: 2024
+
+## 📝 更新日志
+
+### v2.0.0 (2024)
+
+**新增功能**:
+- ✅ 项目管理功能（项目创建、查看、更新、删除）
+- ✅ 系统配置管理（通用配置表，支持漏洞类型等配置）
+- ✅ 文件上传功能（支持PDF、图片、文档等格式）
+- ✅ 报告功能扩展（项目关联、漏洞类型配置、附件上传等）
+
+**改进**:
+- ✅ 数据库表注释和字段注释完善
+- ✅ 报告实体扩展，支持更多字段
+- ✅ 向后兼容（保留 title、description、type 字段）
