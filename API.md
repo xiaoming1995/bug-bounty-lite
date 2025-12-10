@@ -247,13 +247,18 @@ JWT Token 包含以下信息（Payload）：
 | vulnerability_name | string | 是 | 最大255字符 | 漏洞名称 |
 | vulnerability_type_id | integer | 是 | - | 漏洞类型配置ID（从系统配置获取） |
 | vulnerability_impact | string | 否 | 无限制 | 漏洞的危害 |
-| self_assessment | string | 否 | 无限制 | 危害自评 |
+| self_assessment_id | integer \| null | 否 | null | 危害自评配置ID（从系统配置获取，config_type='severity_level'，可为null） |
 | vulnerability_url | string | 否 | URL格式 | 漏洞链接 |
 | vulnerability_detail | string | 否 | 无限制 | 漏洞详情 |
 | attachment_url | string | 否 | URL格式 | 附件地址（文件上传后的URL） |
 | severity | string | 否 | 枚举值 | 危害等级，默认 `Low` |
 
 **severity 可选值**: `Low`, `Medium`, `High`, `Critical`
+
+**说明**:
+- `self_assessment_id` 为可选字段，可以为 `null` 或不传
+- 如果提供 `self_assessment_id`，必须是有效的危害等级配置ID（通过 `GET /api/v1/configs/severity_level` 获取）
+- 有效的危害等级配置ID对应：无危害、低危、中危、高危、严重
 
 **请求示例**:
 ```json
@@ -262,7 +267,7 @@ JWT Token 包含以下信息（Payload）：
   "vulnerability_name": "SQL注入漏洞",
   "vulnerability_type_id": 1,
   "vulnerability_impact": "可能导致数据泄露",
-  "self_assessment": "高危漏洞",
+  "self_assessment_id": 4,
   "vulnerability_url": "https://example.com/vuln",
   "vulnerability_detail": "详细描述漏洞情况...",
   "attachment_url": "https://example.com/uploads/reports/2024/01/abc123.pdf",
@@ -355,9 +360,31 @@ GET /api/v1/reports?page=1&page_size=10
   "data": [
     {
       "id": 2,
-      "title": "XSS Vulnerability in Comment Section",
-      "description": "The comment section allows...",
-      "type": "XSS",
+      "project_id": 1,
+      "project": {
+        "id": 1,
+        "name": "某科技公司官网",
+        "status": "active"
+      },
+      "vulnerability_name": "XSS跨站脚本漏洞",
+      "vulnerability_type_id": 2,
+      "vulnerability_type": {
+        "id": 2,
+        "config_key": "XSS",
+        "config_value": "XSS跨站脚本",
+        "description": "跨站脚本攻击"
+      },
+      "vulnerability_impact": "可能导致用户会话劫持",
+      "self_assessment_id": 3,
+      "self_assessment": {
+        "id": 3,
+        "config_key": "MEDIUM",
+        "config_value": "中危",
+        "description": "中等风险漏洞，有一定影响"
+      },
+      "vulnerability_url": "https://example.com/vuln",
+      "vulnerability_detail": "评论功能存在XSS漏洞，攻击者可以注入恶意脚本...",
+      "attachment_url": "http://localhost:8080/uploads/reports/2024/01/abc123.pdf",
       "severity": "Medium",
       "status": "Pending",
       "author_id": 1,
@@ -407,9 +434,32 @@ GET /api/v1/reports/1
 {
   "data": {
     "id": 1,
-    "title": "SQL Injection in Login Form",
-    "description": "The login form is vulnerable to SQL injection attacks...",
-    "type": "SQL Injection",
+    "project_id": 1,
+    "project": {
+      "id": 1,
+      "name": "某科技公司官网",
+      "description": "公司官方网站，包含用户注册、登录、产品展示等功能",
+      "status": "active"
+    },
+    "vulnerability_name": "SQL注入漏洞",
+    "vulnerability_type_id": 1,
+    "vulnerability_type": {
+      "id": 1,
+      "config_key": "SQL_INJECTION",
+      "config_value": "SQL注入",
+      "description": "SQL注入漏洞"
+    },
+    "vulnerability_impact": "可能导致数据泄露",
+    "self_assessment_id": 4,
+    "self_assessment": {
+      "id": 4,
+      "config_key": "HIGH",
+      "config_value": "高危",
+      "description": "高风险漏洞，影响较大"
+    },
+    "vulnerability_url": "https://example.com/vuln",
+    "vulnerability_detail": "登录表单存在SQL注入漏洞，攻击者可以通过构造恶意SQL语句绕过身份验证...",
+    "attachment_url": "http://localhost:8080/uploads/reports/2024/01/abc123.pdf",
     "severity": "High",
     "status": "Pending",
     "author_id": 1,
@@ -459,7 +509,7 @@ GET /api/v1/reports/1
 | vulnerability_name | string | 否 | 漏洞名称 |
 | vulnerability_type_id | integer | 否 | 漏洞类型配置ID |
 | vulnerability_impact | string | 否 | 漏洞的危害 |
-| self_assessment | string | 否 | 危害自评 |
+| self_assessment_id | integer \| null | 否 | null | 危害自评配置ID（从系统配置获取，config_type='severity_level'，可为null） |
 | vulnerability_url | string | 否 | 漏洞链接（URL格式） |
 | vulnerability_detail | string | 否 | 漏洞详情 |
 | attachment_url | string | 否 | 附件地址（URL格式） |
@@ -485,9 +535,29 @@ GET /api/v1/reports/1
 {
   "data": {
     "id": 1,
-    "title": "SQL Injection in Login Form",
-    "description": "The login form is vulnerable to SQL injection attacks...",
-    "type": "SQL Injection",
+    "project_id": 1,
+    "project": {
+      "id": 1,
+      "name": "某科技公司官网",
+      "status": "active"
+    },
+    "vulnerability_name": "SQL注入漏洞",
+    "vulnerability_type_id": 1,
+    "vulnerability_type": {
+      "id": 1,
+      "config_key": "SQL_INJECTION",
+      "config_value": "SQL注入"
+    },
+    "vulnerability_impact": "可能导致数据泄露",
+    "self_assessment_id": 4,
+    "self_assessment": {
+      "id": 4,
+      "config_key": "HIGH",
+      "config_value": "高危"
+    },
+    "vulnerability_url": "https://example.com/vuln",
+    "vulnerability_detail": "登录表单存在SQL注入漏洞，攻击者可以通过构造恶意SQL语句绕过身份验证...",
+    "attachment_url": "http://localhost:8080/uploads/reports/2024/01/abc123.pdf",
     "severity": "Critical",
     "status": "Triaged",
     "author_id": 1,
@@ -1195,7 +1265,8 @@ interface Report {
   vulnerability_type_id: number;         // 必填，关联漏洞类型配置ID
   vulnerability_type?: SystemConfig;     // 关联的漏洞类型配置
   vulnerability_impact?: string;         // 漏洞的危害
-  self_assessment?: string;              // 危害自评
+  self_assessment_id?: number | null;    // 危害自评配置ID（可选，可为null）
+  self_assessment?: SystemConfig;        // 关联的危害自评配置
   vulnerability_url?: string;            // 漏洞链接
   vulnerability_detail?: string;         // 漏洞详情
   attachment_url?: string;               // 附件地址
@@ -1323,6 +1394,8 @@ Pending (待审) -> Triaged (已确认) -> Resolved (已修复) -> Closed (关�
 | `invalid status transition` | 400 | 非法的状态流转 |
 | `only admin or vendor can change status` | 400 | 无权修改状态 |
 | `至少需要提供一个要变更的字段（手机号、邮箱或姓名）` | 400 | 变更申请至少需要一个字段 |
+| `危害自评配置ID不存在` | 400 | 提供的 self_assessment_id 在数据库中不存在 |
+| `危害自评配置ID必须是危害等级类型` | 400 | self_assessment_id 对应的配置类型不是 severity_level |
 
 ---
 
@@ -1353,7 +1426,62 @@ curl -X GET http://localhost:8080/api/v1/configs/vulnerability_type \
   -H "Authorization: Bearer <TOKEN>"
 ```
 
-#### 4. 上传文件
+#### 4. 获取危害等级配置列表
+
+```bash
+curl -X GET http://localhost:8080/api/v1/configs/severity_level \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+**响应示例**:
+```json
+{
+  "data": [
+    {
+      "id": 9,
+      "config_key": "NONE",
+      "config_value": "无危害",
+      "description": "无安全危害",
+      "sort_order": 1,
+      "status": "active"
+    },
+    {
+      "id": 10,
+      "config_key": "LOW",
+      "config_value": "低危",
+      "description": "低风险漏洞，影响较小",
+      "sort_order": 2,
+      "status": "active"
+    },
+    {
+      "id": 11,
+      "config_key": "MEDIUM",
+      "config_value": "中危",
+      "description": "中等风险漏洞，有一定影响",
+      "sort_order": 3,
+      "status": "active"
+    },
+    {
+      "id": 12,
+      "config_key": "HIGH",
+      "config_value": "高危",
+      "description": "高风险漏洞，影响较大",
+      "sort_order": 4,
+      "status": "active"
+    },
+    {
+      "id": 13,
+      "config_key": "CRITICAL",
+      "config_value": "严重",
+      "description": "严重漏洞，影响极大",
+      "sort_order": 5,
+      "status": "active"
+    }
+  ]
+}
+```
+
+#### 5. 上传文件
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/upload \
@@ -1361,10 +1489,11 @@ curl -X POST http://localhost:8080/api/v1/upload \
   -F "file=@/path/to/vulnerability_report.pdf"
 ```
 
-#### 5. 提交漏洞报告
+#### 6. 提交漏洞报告
 
 ```bash
 # 替换 <TOKEN> 为登录返回的 token
+# 示例1：包含危害自评
 curl -X POST http://localhost:8080/api/v1/reports \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <TOKEN>" \
@@ -1373,11 +1502,25 @@ curl -X POST http://localhost:8080/api/v1/reports \
     "vulnerability_name": "SQL注入漏洞",
     "vulnerability_type_id": 1,
     "vulnerability_impact": "可能导致数据泄露",
-    "self_assessment": "高危漏洞",
+    "self_assessment_id": 12,
     "vulnerability_url": "https://example.com/vuln",
     "vulnerability_detail": "详细描述漏洞情况...",
     "attachment_url": "http://localhost:8080/uploads/reports/2024/01/abc123.pdf",
     "severity": "High"
+  }'
+
+# 示例2：不包含危害自评（self_assessment_id 为可选字段）
+curl -X POST http://localhost:8080/api/v1/reports \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{
+    "project_id": 1,
+    "vulnerability_name": "XSS跨站脚本漏洞",
+    "vulnerability_type_id": 2,
+    "vulnerability_impact": "可能导致用户会话劫持",
+    "vulnerability_url": "https://example.com/vuln",
+    "vulnerability_detail": "详细描述漏洞情况...",
+    "severity": "Medium"
   }'
 ```
 
@@ -1389,21 +1532,21 @@ curl -X POST http://localhost:8080/api/v1/reports \
 }
 ```
 
-#### 6. 获取报告列表
+#### 7. 获取报告列表
 
 ```bash
 curl -X GET "http://localhost:8080/api/v1/reports?page=1&page_size=10" \
   -H "Authorization: Bearer <TOKEN>"
 ```
 
-#### 7. 获取报告详情
+#### 8. 获取报告详情
 
 ```bash
 curl -X GET http://localhost:8080/api/v1/reports/1 \
   -H "Authorization: Bearer <TOKEN>"
 ```
 
-#### 8. 更新报告
+#### 9. 更新报告
 
 ```bash
 curl -X PUT http://localhost:8080/api/v1/reports/1 \
@@ -1417,7 +1560,7 @@ curl -X PUT http://localhost:8080/api/v1/reports/1 \
   }'
 ```
 
-#### 9. 提交信息变更申请
+#### 10. 提交信息变更申请
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/user/info/change \
@@ -1426,21 +1569,21 @@ curl -X POST http://localhost:8080/api/v1/user/info/change \
   -d '{"phone":"13800138000","email":"newemail@example.com","name":"张三"}'
 ```
 
-#### 10. 获取变更申请列表
+#### 11. 获取变更申请列表
 
 ```bash
 curl -X GET http://localhost:8080/api/v1/user/info/changes \
   -H "Authorization: Bearer <TOKEN>"
 ```
 
-#### 11. 获取变更申请详情
+#### 12. 获取变更申请详情
 
 ```bash
 curl -X GET http://localhost:8080/api/v1/user/info/changes/1 \
   -H "Authorization: Bearer <TOKEN>"
 ```
 
-#### 12. 创建项目（仅admin）
+#### 13. 创建项目（仅admin）
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/projects \
@@ -1449,21 +1592,21 @@ curl -X POST http://localhost:8080/api/v1/projects \
   -d '{"name":"某公司官网","description":"公司官方网站项目","note":"重要项目"}'
 ```
 
-#### 13. 获取项目列表
+#### 14. 获取项目列表
 
 ```bash
 curl -X GET "http://localhost:8080/api/v1/projects?page=1&page_size=10" \
   -H "Authorization: Bearer <TOKEN>"
 ```
 
-#### 14. 获取项目详情
+#### 15. 获取项目详情
 
 ```bash
 curl -X GET http://localhost:8080/api/v1/projects/1 \
   -H "Authorization: Bearer <TOKEN>"
 ```
 
-#### 15. 更新项目（仅admin）
+#### 16. 更新项目（仅admin）
 
 ```bash
 curl -X PUT http://localhost:8080/api/v1/projects/1 \
@@ -1472,21 +1615,21 @@ curl -X PUT http://localhost:8080/api/v1/projects/1 \
   -d '{"name":"某公司官网（更新）","status":"inactive"}'
 ```
 
-#### 16. 删除项目（仅admin）
+#### 17. 删除项目（仅admin）
 
 ```bash
 curl -X DELETE http://localhost:8080/api/v1/projects/1 \
   -H "Authorization: Bearer <ADMIN_TOKEN>"
 ```
 
-#### 17. 获取配置列表
+#### 18. 获取配置列表
 
 ```bash
 curl -X GET http://localhost:8080/api/v1/configs/vulnerability_type \
   -H "Authorization: Bearer <TOKEN>"
 ```
 
-#### 18. 创建配置（仅admin）
+#### 19. 创建配置（仅admin）
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/configs/vulnerability_type \
@@ -1585,7 +1728,7 @@ async function submitReport(report: {
   vulnerability_name: string;
   vulnerability_type_id: number;
   vulnerability_impact?: string;
-  self_assessment?: string;
+  self_assessment_id?: number | null;
   vulnerability_url?: string;
   vulnerability_detail?: string;
   attachment_url?: string;
@@ -1622,7 +1765,7 @@ async function updateReport(id: number, data: {
   vulnerability_name?: string;
   vulnerability_type_id?: number;
   vulnerability_impact?: string;
-  self_assessment?: string;
+  self_assessment_id?: number | null;
   vulnerability_url?: string;
   vulnerability_detail?: string;
   attachment_url?: string;
@@ -1756,7 +1899,7 @@ export const submitReport = (report: {
   vulnerability_name: string;
   vulnerability_type_id: number;
   vulnerability_impact?: string;
-  self_assessment?: string;
+  self_assessment_id?: number | null;
   vulnerability_url?: string;
   vulnerability_detail?: string;
   attachment_url?: string;
@@ -1776,7 +1919,7 @@ export const updateReport = (id: number, data: {
   vulnerability_name?: string;
   vulnerability_type_id?: number;
   vulnerability_impact?: string;
-  self_assessment?: string;
+  self_assessment_id?: number | null;
   vulnerability_url?: string;
   vulnerability_detail?: string;
   attachment_url?: string;
@@ -1810,5 +1953,24 @@ export const getInfoChange = (id: number) => api.get(`/user/info/changes/${id}`)
 
 ---
 
-**文档版本**: 3.0.0  
-**最后更新**: 2024
+**文档版本**: 3.1.0  
+**最后更新**: 2024-12-10
+
+## 更新日志
+
+### v3.1.0 (2024-12-10)
+
+**变更**:
+- 将 `self_assessment` 字段改为 `self_assessment_id`（指针类型，可为 null）
+- `self_assessment_id` 关联到 `system_configs` 表，`config_type='severity_level'`
+- 添加危害自评配置ID的验证逻辑
+- 更新所有相关接口文档和示例
+
+**说明**:
+- `self_assessment_id` 为可选字段，可以为 `null` 或不传
+- 如果提供 `self_assessment_id`，必须是有效的危害等级配置ID
+- 通过 `GET /api/v1/configs/severity_level` 获取可用的危害等级配置列表
+
+---
+
+### v3.0.0 (2024)

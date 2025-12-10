@@ -50,9 +50,14 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 	userService := service.NewUserService(userRepo, jwtManager)
 	userHandler := handler.NewUserHandler(userService)
 
+	// SystemConfig 模块（需要在 Report 之前初始化，因为 Report 依赖它）
+	systemConfigRepo := repository.NewSystemConfigRepo(db)
+	systemConfigService := service.NewSystemConfigService(systemConfigRepo)
+	systemConfigHandler := handler.NewSystemConfigHandler(systemConfigService)
+
 	// Report 模块
 	reportRepo := repository.NewReportRepo(db)
-	reportService := service.NewReportService(reportRepo)
+	reportService := service.NewReportService(reportRepo, systemConfigRepo)
 	reportHandler := handler.NewReportHandler(reportService)
 
 	// UserInfoChange 模块
@@ -64,11 +69,6 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 	projectRepo := repository.NewProjectRepo(db)
 	projectService := service.NewProjectService(projectRepo)
 	projectHandler := handler.NewProjectHandler(projectService)
-
-	// SystemConfig 模块
-	systemConfigRepo := repository.NewSystemConfigRepo(db)
-	systemConfigService := service.NewSystemConfigService(systemConfigRepo)
-	systemConfigHandler := handler.NewSystemConfigHandler(systemConfigService)
 
 	// Upload 模块
 	uploadHandler := handler.NewUploadHandler()

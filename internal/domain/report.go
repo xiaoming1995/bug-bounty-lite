@@ -24,8 +24,9 @@ type Report struct {
 	// 漏洞的危害
 	VulnerabilityImpact string `gorm:"type:text;comment:漏洞的危害(文本输入，描述漏洞可能造成的危害)" json:"vulnerability_impact"`
 
-	// 危害自评
-	SelfAssessment string `gorm:"type:text;comment:危害自评(文本输入，提交者对漏洞危害的自我评估)" json:"self_assessment"`
+	// 危害自评（关联危害等级配置）
+	SelfAssessmentID *uint        `gorm:"column:self_assessment_id;index;comment:危害自评配置ID(关联system_configs表，config_type=severity_level)" json:"self_assessment_id"`
+	SelfAssessment   SystemConfig `gorm:"foreignKey:SelfAssessmentID;references:ID" json:"self_assessment,omitempty"`
 
 	// 漏洞链接
 	VulnerabilityURL string `gorm:"size:500;comment:漏洞链接(URL格式，指向漏洞相关页面)" json:"vulnerability_url"`
@@ -67,7 +68,7 @@ type ReportUpdateInput struct {
 	VulnerabilityName   string
 	VulnerabilityTypeID uint
 	VulnerabilityImpact string
-	SelfAssessment      string
+	SelfAssessmentID    *uint
 	VulnerabilityURL    string
 	VulnerabilityDetail string
 	AttachmentURL       string

@@ -3,14 +3,19 @@ package service
 import (
 	"bug-bounty-lite/internal/domain"
 	"errors"
+	"gorm.io/gorm"
 )
 
 type reportService struct {
-	repo domain.ReportRepository
+	repo            domain.ReportRepository
+	systemConfigRepo domain.SystemConfigRepository
 }
 
-func NewReportService(repo domain.ReportRepository) domain.ReportService {
-	return &reportService{repo: repo}
+func NewReportService(repo domain.ReportRepository, systemConfigRepo domain.SystemConfigRepository) domain.ReportService {
+	return &reportService{
+		repo:            repo,
+		systemConfigRepo: systemConfigRepo,
+	}
 }
 
 // SubmitReport 提交漏洞
@@ -33,12 +38,26 @@ func (s *reportService) SubmitReport(report *domain.Report) error {
 		return errors.New("提交者ID不能为空")
 	}
 
-	// 3. 设置默认值
+	// 3. 验证危害自评ID（如果提供了）
+	if report.SelfAssessmentID != nil && *report.SelfAssessmentID != 0 {
+		config, err := s.systemConfigRepo.FindByID(*report.SelfAssessmentID)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return errors.New("危害自评配置ID不存在")
+			}
+			return errors.New("验证危害自评配置时出错: " + err.Error())
+		}
+		if config.ConfigType != "severity_level" {
+			return errors.New("危害自评配置ID必须是危害等级类型")
+		}
+	}
+
+	// 4. 设置默认值
 	if report.Severity == "" {
 		report.Severity = "Low"
 	}
 
-	// 4. 调用 Repo 创建
+	// 5. 调用 Repo 创建
 	return s.repo.Create(report)
 }
 
@@ -96,8 +115,22 @@ func (s *reportService) UpdateReport(id uint, userID uint, userRole string, inpu
 	if input.VulnerabilityImpact != "" {
 		report.VulnerabilityImpact = input.VulnerabilityImpact
 	}
-	if input.SelfAssessment != "" {
-		report.SelfAssessment = input.SelfAssessment
+	if input.SelfAssessmentID != nil && *input.SelfAssessmentID != 0 {
+		// 验证危害自评ID
+		config, err := s.systemConfigRepo.FindByID(*input.SelfAssessmentID)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, errors.New("危害自评配置ID不存在")
+			}
+			return nil, errors.New("验证危害自评配置时出错: " + err.Error())
+		}
+		if config.ConfigType != "severity_level" {
+			return nil, errors.New("危害自评配置ID必须是危害等级类型")
+		}
+		report.SelfAssessmentID = input.SelfAssessmentID
+	} else if input.SelfAssessmentID != nil {
+		// 如果明确传了 null 或 0，设置为 nil（表示 NULL）
+		report.SelfAssessmentID = nil
 	}
 	if input.VulnerabilityURL != "" {
 		report.VulnerabilityURL = input.VulnerabilityURL

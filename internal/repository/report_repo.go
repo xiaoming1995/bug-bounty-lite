@@ -15,16 +15,18 @@ func NewReportRepo(db *gorm.DB) domain.ReportRepository {
 
 // Create 创建报告
 func (r *reportRepo) Create(report *domain.Report) error {
-	return r.db.Create(report).Error
+	// 排除关联字段，只保存基本字段和关联ID
+	return r.db.Omit("Author", "Project", "VulnerabilityType", "SelfAssessment").Create(report).Error
 }
 
 // FindByID 查找详情
 func (r *reportRepo) FindByID(id uint) (*domain.Report, error) {
 	var report domain.Report
-	// Preload 关联查询：Author、Project、VulnerabilityType
+	// Preload 关联查询：Author、Project、VulnerabilityType、SelfAssessment
 	err := r.db.Preload("Author").
 		Preload("Project").
 		Preload("VulnerabilityType").
+		Preload("SelfAssessment").
 		First(&report, id).Error
 	return &report, err
 }
@@ -50,6 +52,7 @@ func (r *reportRepo) List(page, pageSize int) ([]domain.Report, int64, error) {
 	err := query.Preload("Author").
 		Preload("Project").
 		Preload("VulnerabilityType").
+		Preload("SelfAssessment").
 		Order("id desc").
 		Offset(offset).
 		Limit(pageSize).
@@ -60,6 +63,6 @@ func (r *reportRepo) List(page, pageSize int) ([]domain.Report, int64, error) {
 
 // Update 更新报告状态
 func (r *reportRepo) Update(report *domain.Report) error {
-	// Save 会保存所有字段，如果只更新状态建议用 Updates
-	return r.db.Save(report).Error
+	// Save 会保存所有字段，排除关联字段避免错误
+	return r.db.Omit("Author", "Project", "VulnerabilityType", "SelfAssessment").Save(report).Error
 }

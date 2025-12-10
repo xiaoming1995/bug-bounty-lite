@@ -158,8 +158,8 @@ func (m *Migrator) addColumnComments() {
 		},
 		{
 			table:   "reports",
-			column:  "self_assessment",
-			comment: "危害自评(文本输入，提交者对漏洞危害的自我评估)",
+			column:  "self_assessment_id",
+			comment: "危害自评配置ID(关联system_configs表，config_type=severity_level)",
 		},
 		{
 			table:   "reports",

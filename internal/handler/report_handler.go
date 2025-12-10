@@ -23,7 +23,7 @@ type CreateReportRequest struct {
 	VulnerabilityName   string `json:"vulnerability_name" binding:"required,max=255"`
 	VulnerabilityTypeID uint   `json:"vulnerability_type_id" binding:"required"`
 	VulnerabilityImpact string `json:"vulnerability_impact"`
-	SelfAssessment      string `json:"self_assessment"`
+	SelfAssessmentID    *uint  `json:"self_assessment_id"`
 	VulnerabilityURL    string `json:"vulnerability_url" binding:"omitempty,url"`
 	VulnerabilityDetail string `json:"vulnerability_detail"`
 	AttachmentURL       string `json:"attachment_url" binding:"omitempty,url"`
@@ -36,7 +36,7 @@ type UpdateReportRequest struct {
 	VulnerabilityName   string `json:"vulnerability_name" binding:"omitempty,max=255"`
 	VulnerabilityTypeID uint   `json:"vulnerability_type_id"`
 	VulnerabilityImpact string `json:"vulnerability_impact"`
-	SelfAssessment      string `json:"self_assessment"`
+	SelfAssessmentID    *uint  `json:"self_assessment_id"`
 	VulnerabilityURL    string `json:"vulnerability_url" binding:"omitempty,url"`
 	VulnerabilityDetail string `json:"vulnerability_detail"`
 	AttachmentURL       string `json:"attachment_url" binding:"omitempty,url"`
@@ -65,7 +65,7 @@ func (h *ReportHandler) CreateHandler(c *gin.Context) {
 		VulnerabilityName:   req.VulnerabilityName,
 		VulnerabilityTypeID: req.VulnerabilityTypeID,
 		VulnerabilityImpact: req.VulnerabilityImpact,
-		SelfAssessment:      req.SelfAssessment,
+		SelfAssessmentID:    req.SelfAssessmentID,
 		VulnerabilityURL:    req.VulnerabilityURL,
 		VulnerabilityDetail: req.VulnerabilityDetail,
 		AttachmentURL:       req.AttachmentURL,
@@ -148,7 +148,7 @@ func (h *ReportHandler) UpdateHandler(c *gin.Context) {
 		VulnerabilityName:   req.VulnerabilityName,
 		VulnerabilityTypeID: req.VulnerabilityTypeID,
 		VulnerabilityImpact: req.VulnerabilityImpact,
-		SelfAssessment:      req.SelfAssessment,
+		SelfAssessmentID:    req.SelfAssessmentID,
 		VulnerabilityURL:    req.VulnerabilityURL,
 		VulnerabilityDetail: req.VulnerabilityDetail,
 		AttachmentURL:       req.AttachmentURL,

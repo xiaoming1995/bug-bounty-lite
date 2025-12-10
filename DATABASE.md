@@ -4,8 +4,8 @@
 
 - **数据库**: MySQL
 - **ORM**: GORM
-- **版本**: v2.0.0
-- **最后更新**: 2024
+- **版本**: v2.1.0
+- **最后更新**: 2024-12-10
 
 ---
 
@@ -63,7 +63,7 @@
 | vulnerability_name | VARCHAR(255) | NOT NULL | - | 漏洞名称 |
 | vulnerability_type_id | BIGINT UNSIGNED | NOT NULL, FOREIGN KEY | - | 漏洞类型配置ID |
 | vulnerability_impact | TEXT | - | NULL | 漏洞危害 |
-| self_assessment | TEXT | - | NULL | 危害自评 |
+| self_assessment_id | BIGINT UNSIGNED | FOREIGN KEY | NULL | 危害自评配置ID（关联system_configs表，config_type='severity_level'） |
 | vulnerability_url | VARCHAR(500) | - | NULL | 漏洞链接 |
 | vulnerability_detail | TEXT | - | NULL | 漏洞详情 |
 | attachment_url | VARCHAR(500) | - | NULL | 附件地址 |
@@ -82,6 +82,7 @@
 | fk_reports_author | author_id | users | id |
 | fk_reports_project | project_id | projects | id |
 | fk_reports_vuln_type | vulnerability_type_id | system_configs | id |
+| fk_reports_self_assessment | self_assessment_id | system_configs | id |
 
 **危害等级枚举值**:
 | 值 | 说明 |
@@ -143,6 +144,20 @@ Pending --> Triaged --> Resolved --> Closed
 
 ## 迭代记录
 
+### v2.1.0 (2024-12-10)
+
+**修改表**:
+- reports:
+  - 修改字段: self_assessment (TEXT) -> self_assessment_id (BIGINT UNSIGNED, 可为NULL)
+  - 新增外键: fk_reports_self_assessment (self_assessment_id -> system_configs.id)
+
+**说明**:
+- 危害自评字段改为关联配置表，使用 `self_assessment_id` 关联到 `system_configs` 表
+- `self_assessment_id` 必须对应 `config_type='severity_level'` 的配置
+- 字段可为 NULL，表示未设置危害自评
+
+---
+
 ### v2.0.0 (表结构优化)
 
 **修改表**:
@@ -151,7 +166,7 @@ Pending --> Triaged --> Resolved --> Closed
   - 新增字段: vulnerability_name (VARCHAR(255)) - 漏洞名称
   - 新增字段: vulnerability_type_id (BIGINT UNSIGNED) - 漏洞类型配置ID
   - 新增字段: vulnerability_impact (TEXT) - 漏洞危害
-  - 新增字段: self_assessment (TEXT) - 危害自评
+  - 新增字段: self_assessment_id (BIGINT UNSIGNED) - 危害自评配置ID（关联system_configs表）
   - 新增字段: vulnerability_url (VARCHAR(500)) - 漏洞链接
   - 新增字段: vulnerability_detail (TEXT) - 漏洞详情
   - 新增字段: attachment_url (VARCHAR(500)) - 附件地址
