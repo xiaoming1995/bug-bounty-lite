@@ -4,7 +4,7 @@
 
 - **数据库**: MySQL
 - **ORM**: GORM
-- **版本**: v1.1.0
+- **版本**: v2.0.0
 - **最后更新**: 2024
 
 ---
@@ -15,6 +15,9 @@
 |------|------|------|--------|
 | 1 | users | 用户表 | `internal/domain/user.go` |
 | 2 | reports | 漏洞报告表 | `internal/domain/report.go` |
+| 3 | projects | 项目表 | `internal/domain/project.go` |
+| 4 | system_configs | 系统配置表 | `internal/domain/system_config.go` |
+| 5 | user_info_change_requests | 用户信息变更申请表 | `internal/domain/user_info_change.go` |
 
 ---
 
@@ -56,9 +59,14 @@
 | id | BIGINT UNSIGNED | PRIMARY KEY, AUTO_INCREMENT | 自增 | 报告ID |
 | created_at | DATETIME(3) | - | 自动 | 创建时间 |
 | updated_at | DATETIME(3) | - | 自动 | 更新时间 |
-| title | VARCHAR(255) | NOT NULL | - | 漏洞标题 |
-| description | TEXT | - | NULL | 漏洞描述 |
-| type | VARCHAR(50) | - | NULL | 漏洞类型 |
+| project_id | BIGINT UNSIGNED | NOT NULL, FOREIGN KEY | - | 关联项目ID |
+| vulnerability_name | VARCHAR(255) | NOT NULL | - | 漏洞名称 |
+| vulnerability_type_id | BIGINT UNSIGNED | NOT NULL, FOREIGN KEY | - | 漏洞类型配置ID |
+| vulnerability_impact | TEXT | - | NULL | 漏洞危害 |
+| self_assessment | TEXT | - | NULL | 危害自评 |
+| vulnerability_url | VARCHAR(500) | - | NULL | 漏洞链接 |
+| vulnerability_detail | TEXT | - | NULL | 漏洞详情 |
+| attachment_url | VARCHAR(500) | - | NULL | 附件地址 |
 | severity | VARCHAR(20) | - | 'Low' | 危害等级 |
 | status | VARCHAR(20) | - | 'Pending' | 报告状态 |
 | author_id | BIGINT UNSIGNED | FOREIGN KEY | - | 提交者ID |
@@ -72,6 +80,8 @@
 | 外键名 | 字段 | 引用表 | 引用字段 |
 |--------|------|--------|----------|
 | fk_reports_author | author_id | users | id |
+| fk_reports_project | project_id | projects | id |
+| fk_reports_vuln_type | vulnerability_type_id | system_configs | id |
 
 **危害等级枚举值**:
 | 值 | 说明 |
@@ -104,26 +114,62 @@ Pending --> Triaged --> Resolved --> Closed
 ## ER 图
 
 ```
-+-------------------+          +-------------------+
-|      users        |          |     reports       |
-+-------------------+          +-------------------+
-| PK | id           |<---------| FK | author_id    |
-|    | created_at   |          |    | id           |
-|    | updated_at   |          |    | created_at   |
-|    | username     |          |    | updated_at   |
-|    | password     |          |    | title        |
-|    | role         |          |    | description  |
-+-------------------+          |    | type         |
-                               |    | severity     |
-                               |    | status       |
-                               +-------------------+
++-------------------+          +-------------------------+          +-------------------+
+|      users        |          |        reports          |          |     projects      |
++-------------------+          +-------------------------+          +-------------------+
+| PK | id           |<---------| FK | author_id          |--------->| PK | id           |
+|    | created_at   |          |    | id                 |          |    | name         |
+|    | updated_at   |          |    | created_at         |          |    | description  |
+|    | username     |          |    | updated_at         |          |    | note         |
+|    | password     |          | FK | project_id         |          |    | status       |
+|    | role         |          | FK | vulnerability_type_id         +-------------------+
++-------------------+          |    | vulnerability_name |
+                               |    | vulnerability_impact|          +-------------------+
+                               |    | self_assessment    |          |  system_configs   |
+                               |    | vulnerability_url  |          +-------------------+
+                               |    | vulnerability_detail--------->| PK | id           |
+                               |    | attachment_url     |          |    | config_type  |
+                               |    | severity           |          |    | config_key   |
+                               |    | status             |          |    | config_value |
+                               +-------------------------+          +-------------------+
 
-关系: users (1) <-----> (N) reports
+关系: 
+  - users (1) <-----> (N) reports
+  - projects (1) <-----> (N) reports
+  - system_configs (1) <-----> (N) reports (漏洞类型)
 ```
 
 ---
 
 ## 迭代记录
+
+### v2.0.0 (表结构优化)
+
+**修改表**:
+- reports:
+  - 新增字段: project_id (BIGINT UNSIGNED) - 关联项目ID
+  - 新增字段: vulnerability_name (VARCHAR(255)) - 漏洞名称
+  - 新增字段: vulnerability_type_id (BIGINT UNSIGNED) - 漏洞类型配置ID
+  - 新增字段: vulnerability_impact (TEXT) - 漏洞危害
+  - 新增字段: self_assessment (TEXT) - 危害自评
+  - 新增字段: vulnerability_url (VARCHAR(500)) - 漏洞链接
+  - 新增字段: vulnerability_detail (TEXT) - 漏洞详情
+  - 新增字段: attachment_url (VARCHAR(500)) - 附件地址
+  - 删除字段: title - 已被 vulnerability_name 替代
+  - 删除字段: description - 已被 vulnerability_detail 替代
+  - 删除字段: type - 已被 vulnerability_type_id 关联替代
+
+**新增表**:
+- projects: 项目表
+- system_configs: 系统配置表
+- user_info_change_requests: 用户信息变更申请表
+
+**说明**:
+- 报告表结构重构，使用关联表替代冗余字段
+- 新增项目管理功能
+- 新增系统配置管理功能
+
+---
 
 ### v1.1.0 (数据库迁移)
 

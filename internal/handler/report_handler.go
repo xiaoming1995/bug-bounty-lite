@@ -28,10 +28,6 @@ type CreateReportRequest struct {
 	VulnerabilityDetail string `json:"vulnerability_detail"`
 	AttachmentURL       string `json:"attachment_url" binding:"omitempty,url"`
 	Severity            string `json:"severity" binding:"omitempty,oneof=Low Medium High Critical"`
-	// 保留字段（向后兼容）
-	Title       string `json:"title" binding:"omitempty,max=255"`
-	Description string `json:"description"`
-	Type        string `json:"type" binding:"omitempty,max=50"`
 }
 
 // UpdateReportRequest 更新报告请求 DTO
@@ -46,10 +42,6 @@ type UpdateReportRequest struct {
 	AttachmentURL       string `json:"attachment_url" binding:"omitempty,url"`
 	Severity            string `json:"severity" binding:"omitempty,oneof=Low Medium High Critical"`
 	Status              string `json:"status" binding:"omitempty,oneof=Pending Triaged Resolved Closed"`
-	// 保留字段（向后兼容）
-	Title       string `json:"title" binding:"omitempty,max=255"`
-	Description string `json:"description"`
-	Type        string `json:"type" binding:"omitempty,max=50"`
 }
 
 // CreateHandler 提交漏洞
@@ -79,10 +71,6 @@ func (h *ReportHandler) CreateHandler(c *gin.Context) {
 		AttachmentURL:       req.AttachmentURL,
 		Severity:            req.Severity,
 		AuthorID:            userID.(uint),
-		// 保留字段（向后兼容）
-		Title:       req.Title,
-		Description: req.Description,
-		Type:        req.Type,
 	}
 
 	// 设置默认值
@@ -166,10 +154,6 @@ func (h *ReportHandler) UpdateHandler(c *gin.Context) {
 		AttachmentURL:       req.AttachmentURL,
 		Severity:            req.Severity,
 		Status:              req.Status,
-		// 保留字段（向后兼容）
-		Title:       req.Title,
-		Description: req.Description,
-		Type:        req.Type,
 	})
 
 	if err != nil {

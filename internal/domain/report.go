@@ -36,16 +36,6 @@ type Report struct {
 	// 附件地址
 	AttachmentURL string `gorm:"size:500;comment:附件地址(文件上传后的URL，单个文件，后续可扩展为多个)" json:"attachment_url"`
 
-	// ========== 保留字段（向后兼容） ==========
-	// 漏洞标题（保留字段，与vulnerability_name同步）
-	Title string `gorm:"size:255;not null;comment:漏洞标题(保留字段，与vulnerability_name同步，用于向后兼容)" json:"title"`
-
-	// 漏洞描述（保留字段，与vulnerability_detail同步）
-	Description string `gorm:"type:text;comment:漏洞描述(保留字段，与vulnerability_detail同步，用于向后兼容)" json:"description"`
-
-	// 漏洞类型（保留字段，从vulnerability_type配置同步）
-	Type string `gorm:"size:50;comment:漏洞类型(保留字段，从vulnerability_type配置同步，用于向后兼容)" json:"type"`
-
 	// 危害等级: Low, Medium, High, Critical
 	Severity string `gorm:"size:20;default:'Low';comment:危害等级(Low/Medium/High/Critical)" json:"severity"`
 
@@ -74,16 +64,13 @@ type ReportRepository interface {
 // ReportUpdateInput 更新报告输入
 type ReportUpdateInput struct {
 	ProjectID           uint
-	VulnerabilityName    string
-	VulnerabilityTypeID  uint
+	VulnerabilityName   string
+	VulnerabilityTypeID uint
 	VulnerabilityImpact string
 	SelfAssessment      string
 	VulnerabilityURL    string
 	VulnerabilityDetail string
 	AttachmentURL       string
-	Title               string
-	Description         string
-	Type                string
 	Severity            string
 	Status              string
 }

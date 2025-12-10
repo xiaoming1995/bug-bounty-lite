@@ -33,31 +33,13 @@ func (s *reportService) SubmitReport(report *domain.Report) error {
 		return errors.New("提交者ID不能为空")
 	}
 
-	// 3. 同步字段到保留字段（向后兼容）
-	report.Title = report.VulnerabilityName
-	report.Description = report.VulnerabilityDetail
-	// Type 字段会在创建后通过关联查询获取并更新
-
-	// 4. 设置默认值
+	// 3. 设置默认值
 	if report.Severity == "" {
 		report.Severity = "Low"
 	}
 
-	// 5. 调用 Repo 创建
-	if err := s.repo.Create(report); err != nil {
-		return err
-	}
-
-	// 6. 创建后，通过关联查询获取 VulnerabilityType 的 config_key，同步到 Type 字段
-	if report.VulnerabilityTypeID > 0 {
-		createdReport, err := s.repo.FindByID(report.ID)
-		if err == nil && createdReport.VulnerabilityType.ConfigKey != "" {
-			createdReport.Type = createdReport.VulnerabilityType.ConfigKey
-			s.repo.Update(createdReport)
-		}
-	}
-
-	return nil
+	// 4. 调用 Repo 创建
+	return s.repo.Create(report)
 }
 
 func (s *reportService) GetReport(id uint) (*domain.Report, error) {
@@ -101,14 +83,12 @@ func (s *reportService) UpdateReport(id uint, userID uint, userRole string, inpu
 		report.Status = input.Status
 	}
 
-	// 4. 更新新字段
+	// 4. 更新字段
 	if input.ProjectID != 0 {
 		report.ProjectID = input.ProjectID
 	}
 	if input.VulnerabilityName != "" {
 		report.VulnerabilityName = input.VulnerabilityName
-		// 同步到 title
-		report.Title = input.VulnerabilityName
 	}
 	if input.VulnerabilityTypeID != 0 {
 		report.VulnerabilityTypeID = input.VulnerabilityTypeID
@@ -124,30 +104,9 @@ func (s *reportService) UpdateReport(id uint, userID uint, userRole string, inpu
 	}
 	if input.VulnerabilityDetail != "" {
 		report.VulnerabilityDetail = input.VulnerabilityDetail
-		// 同步到 description
-		report.Description = input.VulnerabilityDetail
 	}
 	if input.AttachmentURL != "" {
 		report.AttachmentURL = input.AttachmentURL
-	}
-
-	// 5. 更新保留字段（向后兼容）
-	if input.Title != "" {
-		report.Title = input.Title
-		// 如果 vulnerability_name 为空，则同步
-		if report.VulnerabilityName == "" {
-			report.VulnerabilityName = input.Title
-		}
-	}
-	if input.Description != "" {
-		report.Description = input.Description
-		// 如果 vulnerability_detail 为空，则同步
-		if report.VulnerabilityDetail == "" {
-			report.VulnerabilityDetail = input.Description
-		}
-	}
-	if input.Type != "" {
-		report.Type = input.Type
 	}
 	if input.Severity != "" {
 		report.Severity = input.Severity

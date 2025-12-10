@@ -252,9 +252,6 @@ JWT Token 包含以下信息（Payload）：
 | vulnerability_detail | string | 否 | 无限制 | 漏洞详情 |
 | attachment_url | string | 否 | URL格式 | 附件地址（文件上传后的URL） |
 | severity | string | 否 | 枚举值 | 危害等级，默认 `Low` |
-| title | string | 否 | 最大255字符 | 漏洞标题（保留字段，向后兼容） |
-| description | string | 否 | 无限制 | 漏洞描述（保留字段，向后兼容） |
-| type | string | 否 | 最大50字符 | 漏洞类型（保留字段，向后兼容） |
 
 **severity 可选值**: `Low`, `Medium`, `High`, `Critical`
 
@@ -468,9 +465,6 @@ GET /api/v1/reports/1
 | attachment_url | string | 否 | 附件地址（URL格式） |
 | severity | string | 否 | 危害等级 |
 | status | string | 否 | 状态（仅 admin/vendor） |
-| title | string | 否 | 漏洞标题（保留字段） |
-| description | string | 否 | 漏洞描述（保留字段） |
-| type | string | 否 | 漏洞类型（保留字段） |
 
 **severity 可选值**: `Low`, `Medium`, `High`, `Critical`
 
@@ -511,7 +505,7 @@ GET /api/v1/reports/1
 ```
 
 **权限说明**:
-- 报告作者可以更新 `title`、`description`、`type`、`severity`
+- 报告作者可以更新 `vulnerability_name`、`vulnerability_detail`、`severity` 等字段
 - 只有 `admin` 或 `vendor` 角色可以更新 `status`
 - 状态流转规则: `Pending` -> `Triaged` -> `Resolved` -> `Closed`
 
@@ -1205,9 +1199,6 @@ interface Report {
   vulnerability_url?: string;            // 漏洞链接
   vulnerability_detail?: string;         // 漏洞详情
   attachment_url?: string;               // 附件地址
-  title: string;                         // 保留字段，与vulnerability_name同步
-  description?: string;                  // 保留字段，与vulnerability_detail同步
-  type?: string;                         // 保留字段，从vulnerability_type同步
   severity: 'Low' | 'Medium' | 'High' | 'Critical';
   status: 'Pending' | 'Triaged' | 'Resolved' | 'Closed';
   author_id: number;

@@ -176,22 +176,6 @@ func (m *Migrator) addColumnComments() {
 			column:  "attachment_url",
 			comment: "附件地址(文件上传后的URL，单个文件，后续可扩展为多个)",
 		},
-		// reports 表保留字段
-		{
-			table:   "reports",
-			column:  "title",
-			comment: "漏洞标题(保留字段，与vulnerability_name同步，用于向后兼容)",
-		},
-		{
-			table:   "reports",
-			column:  "description",
-			comment: "漏洞描述(保留字段，与vulnerability_detail同步，用于向后兼容)",
-		},
-		{
-			table:   "reports",
-			column:  "type",
-			comment: "漏洞类型(保留字段，从vulnerability_type配置同步，用于向后兼容)",
-		},
 	}
 
 	for _, cc := range columnComments {
