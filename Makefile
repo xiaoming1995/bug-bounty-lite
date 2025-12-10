@@ -1,4 +1,4 @@
-.PHONY: run run-migrate build test clean docker-build docker-run tidy lint migrate migrate-status seed seed-force help
+.PHONY: run run-migrate build test clean docker-build docker-run tidy lint migrate migrate-status init init-force seed-projects seed-projects-force help
 
 # 默认目标
 .DEFAULT_GOAL := help
@@ -38,13 +38,21 @@ migrate:
 migrate-status:
 	go run cmd/migrate/main.go -status
 
-## seed: 填充测试数据
-seed:
-	go run cmd/seed/main.go
+## init: 初始化系统必需数据（危害等级等）
+init:
+	go run cmd/init/main.go
 
-## seed-force: 强制填充测试数据（跳过已存在的数据）
-seed-force:
-	go run cmd/seed/main.go -force
+## init-force: 强制初始化系统数据（跳过已存在的数据）
+init-force:
+	go run cmd/init/main.go -force
+
+## seed-projects: 填充项目测试数据
+seed-projects:
+	go run cmd/seed-projects/main.go
+
+## seed-projects-force: 强制填充项目测试数据（跳过已存在的数据）
+seed-projects-force:
+	go run cmd/seed-projects/main.go -force
 
 # ===========================
 # 测试命令
@@ -116,10 +124,12 @@ help:
 	@echo "  build          Build binary"
 	@echo ""
 	@echo "Database:"
-	@echo "  migrate        Run database migrations"
-	@echo "  migrate-status Show migration status"
-	@echo "  seed           Seed test data"
-	@echo "  seed-force     Force seed test data (skip existing)"
+	@echo "  migrate              Run database migrations"
+	@echo "  migrate-status       Show migration status"
+	@echo "  init                 Initialize system data (severity levels, etc.)"
+	@echo "  init-force           Force init system data (skip existing)"
+	@echo "  seed-projects        Seed projects test data"
+	@echo "  seed-projects-force  Force seed projects test data (skip existing)"
 	@echo ""
 	@echo "Testing:"
 	@echo "  test           Run tests"

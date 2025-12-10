@@ -24,8 +24,8 @@ func main() {
 		return
 	}
 
-	fmt.Println("Bug Bounty Lite - Test Data Seeder")
-	fmt.Println("====================================")
+	fmt.Println("Bug Bounty Lite - Projects Test Data Seeder")
+	fmt.Println("=============================================")
 
 	// 加载配置
 	cfg := config.LoadConfig()
@@ -34,55 +34,45 @@ func main() {
 	db := database.InitDB(cfg)
 
 	// 执行数据填充
-	seeder := NewSeeder(db)
+	seeder := NewProjectSeeder(db)
 	if err := seeder.Seed(*forceFlag); err != nil {
 		fmt.Printf("[ERROR] Seed failed: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Println("\n[OK] Test data seeded successfully!")
+	fmt.Println("\n[OK] Projects test data seeded successfully!")
 }
 
 func printHelp() {
-	fmt.Println("Bug Bounty Lite - Test Data Seeder")
+	fmt.Println("Bug Bounty Lite - Projects Test Data Seeder")
 	fmt.Println("")
 	fmt.Println("Usage:")
-	fmt.Println("  go run cmd/seed/main.go [options]")
+	fmt.Println("  go run cmd/seed-projects/main.go [options]")
 	fmt.Println("")
 	fmt.Println("Options:")
 	fmt.Println("  -force    Force seed even if data exists (will skip existing data)")
 	fmt.Println("  -help     Show this help message")
 	fmt.Println("")
 	fmt.Println("Examples:")
-	fmt.Println("  go run cmd/seed/main.go           # Seed test data")
-	fmt.Println("  go run cmd/seed/main.go -force    # Force seed (skip existing)")
+	fmt.Println("  go run cmd/seed-projects/main.go           # Seed projects test data")
+	fmt.Println("  go run cmd/seed-projects/main.go -force    # Force seed (skip existing)")
 	fmt.Println("")
 	fmt.Println("Or use Makefile:")
-	fmt.Println("  make seed         # Seed test data")
-	fmt.Println("  make seed-force   # Force seed")
+	fmt.Println("  make seed-projects         # Seed projects test data")
+	fmt.Println("  make seed-projects-force   # Force seed")
 }
 
-// Seeder 测试数据填充器
-type Seeder struct {
+// ProjectSeeder 项目测试数据填充器
+type ProjectSeeder struct {
 	db *gorm.DB
 }
 
-func NewSeeder(db *gorm.DB) *Seeder {
-	return &Seeder{db: db}
+func NewProjectSeeder(db *gorm.DB) *ProjectSeeder {
+	return &ProjectSeeder{db: db}
 }
 
-// Seed 填充测试数据
-func (s *Seeder) Seed(force bool) error {
-	// 填充项目测试数据
-	if err := s.seedProjects(force); err != nil {
-		return fmt.Errorf("failed to seed projects: %w", err)
-	}
-
-	return nil
-}
-
-// seedProjects 填充项目测试数据
-func (s *Seeder) seedProjects(force bool) error {
+// Seed 填充项目测试数据
+func (s *ProjectSeeder) Seed(force bool) error {
 	var count int64
 	s.db.Model(&domain.Project{}).Count(&count)
 
