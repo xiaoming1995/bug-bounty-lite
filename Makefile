@@ -1,4 +1,4 @@
-.PHONY: run run-migrate build test clean docker-build docker-run tidy lint migrate migrate-status init init-force seed-projects seed-projects-force help
+.PHONY: run run-migrate build test clean docker-build docker-run tidy lint migrate migrate-status init init-force seed-projects seed-projects-force seed-reports seed-reports-force help
 
 # 默认目标
 .DEFAULT_GOAL := help
@@ -53,6 +53,14 @@ seed-projects:
 ## seed-projects-force: 强制填充项目测试数据（跳过已存在的数据）
 seed-projects-force:
 	go run cmd/seed-projects/main.go -force
+
+## seed-reports: 填充漏洞报告测试数据（包含测试用户）
+seed-reports:
+	go run cmd/seed-reports/main.go
+
+## seed-reports-force: 强制填充漏洞报告测试数据（跳过已存在的数据）
+seed-reports-force:
+	go run cmd/seed-reports/main.go -force
 
 # ===========================
 # 测试命令
@@ -130,6 +138,8 @@ help:
 	@echo "  init-force           Force init system data (skip existing)"
 	@echo "  seed-projects        Seed projects test data"
 	@echo "  seed-projects-force  Force seed projects test data (skip existing)"
+	@echo "  seed-reports         Seed reports test data (includes test users)"
+	@echo "  seed-reports-force   Force seed reports test data (skip existing)"
 	@echo ""
 	@echo "Testing:"
 	@echo "  test           Run tests"
