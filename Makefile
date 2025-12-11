@@ -1,4 +1,4 @@
-.PHONY: run run-migrate build test clean docker-build docker-run tidy lint migrate migrate-status init init-force seed-projects seed-projects-force seed-reports seed-reports-force help
+.PHONY: run run-migrate build test clean docker-build docker-run tidy lint migrate migrate-status init init-force seed-projects seed-projects-force seed-users seed-users-force seed-reports seed-reports-force seed-all help
 
 # 默认目标
 .DEFAULT_GOAL := help
@@ -54,13 +54,25 @@ seed-projects:
 seed-projects-force:
 	go run cmd/seed-projects/main.go -force
 
-## seed-reports: 填充漏洞报告测试数据（包含测试用户）
+## seed-users: 填充测试用户数据
+seed-users:
+	go run cmd/seed-users/main.go
+
+## seed-users-force: 强制填充测试用户数据（跳过已存在的数据）
+seed-users-force:
+	go run cmd/seed-users/main.go -force
+
+## seed-reports: 填充漏洞报告测试数据（需要先运行 seed-users）
 seed-reports:
 	go run cmd/seed-reports/main.go
 
 ## seed-reports-force: 强制填充漏洞报告测试数据（跳过已存在的数据）
 seed-reports-force:
 	go run cmd/seed-reports/main.go -force
+
+## seed-all: 填充所有测试数据（项目、用户、报告）
+seed-all: seed-projects seed-users seed-reports
+	@echo "[OK] All test data seeded successfully!"
 
 # ===========================
 # 测试命令
@@ -138,8 +150,11 @@ help:
 	@echo "  init-force           Force init system data (skip existing)"
 	@echo "  seed-projects        Seed projects test data"
 	@echo "  seed-projects-force  Force seed projects test data (skip existing)"
-	@echo "  seed-reports         Seed reports test data (includes test users)"
+	@echo "  seed-users           Seed users test data"
+	@echo "  seed-users-force     Force seed users test data (skip existing)"
+	@echo "  seed-reports         Seed reports test data (requires seed-users)"
 	@echo "  seed-reports-force   Force seed reports test data (skip existing)"
+	@echo "  seed-all             Seed all test data (projects + users + reports)"
 	@echo ""
 	@echo "Testing:"
 	@echo "  test           Run tests"

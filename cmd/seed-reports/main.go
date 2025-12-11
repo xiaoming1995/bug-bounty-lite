@@ -11,7 +11,6 @@ import (
 	"os"
 	"time"
 
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -68,6 +67,7 @@ func printHelp() {
 	fmt.Println("  1. Run 'make migrate' to create database tables")
 	fmt.Println("  2. Run 'make seed-projects' to create test projects")
 	fmt.Println("  3. Run 'make init' to initialize severity levels")
+	fmt.Println("  4. Run 'make seed-users' to create test users")
 }
 
 // ReportSeeder 报告测试数据填充器
@@ -81,11 +81,18 @@ func NewReportSeeder(db *gorm.DB) *ReportSeeder {
 
 // Seed 填充报告测试数据
 func (s *ReportSeeder) Seed(force bool) error {
-	// 1. 确保有测试用户
-	fmt.Println("\n[Step 1] Ensuring test users...")
-	users, err := s.ensureTestUsers()
-	if err != nil {
-		return fmt.Errorf("failed to ensure test users: %w", err)
+	// 1. 获取白帽子用户
+	fmt.Println("\n[Step 1] Loading whitehat users...")
+	var whitehats []domain.User
+	if err := s.db.Where("role = ?", "whitehat").Find(&whitehats).Error; err != nil {
+		return fmt.Errorf("failed to get whitehat users: %w", err)
+	}
+	if len(whitehats) == 0 {
+		return fmt.Errorf("no whitehat users found, please run 'make seed-users' first")
+	}
+	fmt.Printf("[INFO] Found %d whitehat users\n", len(whitehats))
+	for _, u := range whitehats {
+		fmt.Printf("   - %s (%s)\n", u.Username, u.Name)
 	}
 
 	// 2. 获取项目列表
@@ -128,61 +135,11 @@ func (s *ReportSeeder) Seed(force bool) error {
 
 	// 6. 生成测试报告数据
 	fmt.Println("\n[Step 5] Generating test reports...")
-	return s.generateReports(users, projects, vulnTypes, severityLevels, force)
-}
-
-// ensureTestUsers 确保有测试用户
-func (s *ReportSeeder) ensureTestUsers() ([]domain.User, error) {
-	testUsers := []struct {
-		Username string
-		Password string
-		Role     string
-		Name     string
-		Email    string
-		Phone    string
-	}{
-		{"whitehat_zhang", "password123", "whitehat", "张三", "zhang@example.com", "13800138001"},
-		{"whitehat_li", "password123", "whitehat", "李四", "li@example.com", "13800138002"},
-		{"whitehat_wang", "password123", "whitehat", "王五", "wang@example.com", "13800138003"},
-		{"whitehat_zhao", "password123", "whitehat", "赵六", "zhao@example.com", "13800138004"},
-		{"whitehat_chen", "password123", "whitehat", "陈七", "chen@example.com", "13800138005"},
-		{"vendor_test", "password123", "vendor", "测试厂商", "vendor@example.com", "13900139001"},
-		{"admin_test", "admin123", "admin", "测试管理员", "admin@example.com", "13900139002"},
-	}
-
-	var users []domain.User
-	for _, u := range testUsers {
-		var user domain.User
-		if err := s.db.Where("username = ?", u.Username).First(&user).Error; err != nil {
-			// 用户不存在，创建
-			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
-			if err != nil {
-				return nil, fmt.Errorf("failed to hash password: %w", err)
-			}
-			user = domain.User{
-				Username: u.Username,
-				Password: string(hashedPassword),
-				Role:     u.Role,
-				Name:     u.Name,
-				Email:    u.Email,
-				Phone:    u.Phone,
-			}
-			if err := s.db.Create(&user).Error; err != nil {
-				log.Printf("[WARN] Failed to create user %s: %v", u.Username, err)
-				continue
-			}
-			fmt.Printf("[OK] Created test user: %s (%s - %s)\n", u.Username, u.Name, u.Role)
-		} else {
-			fmt.Printf("[SKIP] Test user '%s' already exists\n", u.Username)
-		}
-		users = append(users, user)
-	}
-
-	return users, nil
+	return s.generateReports(whitehats, projects, vulnTypes, severityLevels, force)
 }
 
 // generateReports 生成测试报告
-func (s *ReportSeeder) generateReports(users []domain.User, projects []domain.Project, vulnTypes []domain.SystemConfig, severityLevels []domain.SystemConfig, force bool) error {
+func (s *ReportSeeder) generateReports(whitehats []domain.User, projects []domain.Project, vulnTypes []domain.SystemConfig, severityLevels []domain.SystemConfig, force bool) error {
 	rand.Seed(time.Now().UnixNano())
 
 	// 定义测试数据模板
@@ -341,18 +298,6 @@ func (s *ReportSeeder) generateReports(users []domain.User, projects []domain.Pr
 		},
 	}
 
-	// 只选择whitehat用户作为报告提交者
-	var whitehats []domain.User
-	for _, u := range users {
-		if u.Role == "whitehat" {
-			whitehats = append(whitehats, u)
-		}
-	}
-
-	if len(whitehats) == 0 {
-		return fmt.Errorf("no whitehat users available")
-	}
-
 	// 创建漏洞类型映射
 	vulnTypeMap := make(map[string]domain.SystemConfig)
 	for _, vt := range vulnTypes {
@@ -507,4 +452,3 @@ func (s *ReportSeeder) printStatistics() {
 
 	fmt.Println("\n===================================")
 }
-
