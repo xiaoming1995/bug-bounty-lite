@@ -96,18 +96,20 @@ func (h *ReportHandler) ListHandler(c *gin.Context) {
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
 
 	// 获取当前用户信息
-	userID, exists := c.Get("userID")
+	userIDVal, exists := c.Get("userID")
 	if !exists {
 		response.Unauthorized(c, "用户未认证")
 		return
 	}
-	role, _ := c.Get("role")
-	userRole := ""
-	if role != nil {
-		userRole = role.(string)
+	userID := userIDVal.(uint)
+
+	roleVal, exists := c.Get("role")
+	userRole := "whitehat" // 默认角色
+	if exists && roleVal != nil {
+		userRole = roleVal.(string)
 	}
 
-	reports, total, err := h.Service.ListReports(page, pageSize, userID.(uint), userRole)
+	reports, total, err := h.Service.ListReports(page, pageSize, userID, userRole)
 	if err != nil {
 		response.Error(c, 500, "获取报告列表失败: "+err.Error())
 		return

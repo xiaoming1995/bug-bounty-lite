@@ -40,29 +40,28 @@ func (r *reportRepo) List(page, pageSize int, authorID *uint) ([]domain.Report, 
 	// 1. 计算 Offset
 	offset := (page - 1) * pageSize
 
-	// 2. 构建基础查询条件
-	baseQuery := r.db.Model(&domain.Report{})
-	if authorID != nil {
-		baseQuery = baseQuery.Where("author_id = ?", *authorID)
+	// 2. 查询总数
+	countQuery := r.db.Model(&domain.Report{})
+	if authorID != nil && *authorID > 0 {
+		countQuery = countQuery.Where("author_id = ?", *authorID)
 	}
-
-	// 3. 查询总数（使用独立的查询避免链式调用问题）
-	if err := baseQuery.Count(&total).Error; err != nil {
+	if err := countQuery.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	// 4. 查询当前页数据（重新构建查询）
-	dataQuery := r.db.Model(&domain.Report{})
-	if authorID != nil {
+	// 3. 查询当前页数据
+	dataQuery := r.db.Preload("Author").
+		Preload("Project").
+		Preload("VulnerabilityType").
+		Preload("SelfAssessment")
+
+	// 添加 author_id 过滤条件
+	if authorID != nil && *authorID > 0 {
 		dataQuery = dataQuery.Where("author_id = ?", *authorID)
 	}
 
 	// Order("id desc") 保证最新的漏洞显示在最前面
-	err := dataQuery.Preload("Author").
-		Preload("Project").
-		Preload("VulnerabilityType").
-		Preload("SelfAssessment").
-		Order("id desc").
+	err := dataQuery.Order("id desc").
 		Offset(offset).
 		Limit(pageSize).
 		Find(&reports).Error
