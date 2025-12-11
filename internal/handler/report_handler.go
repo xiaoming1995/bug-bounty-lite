@@ -88,21 +88,36 @@ func (h *ReportHandler) CreateHandler(c *gin.Context) {
 }
 
 // ListHandler 获取列表
+// - 白帽子只能查看自己提交的报告
+// - 厂商和管理员可以查看所有报告
 func (h *ReportHandler) ListHandler(c *gin.Context) {
 	// 获取 query 参数 ?page=1&page_size=10
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
 
-	reports, total, err := h.Service.ListReports(page, pageSize)
+	// 获取当前用户信息
+	userID, exists := c.Get("userID")
+	if !exists {
+		response.Unauthorized(c, "用户未认证")
+		return
+	}
+	role, _ := c.Get("role")
+	userRole := ""
+	if role != nil {
+		userRole = role.(string)
+	}
+
+	reports, total, err := h.Service.ListReports(page, pageSize, userID.(uint), userRole)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.Error(c, 500, "获取报告列表失败: "+err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"data":  reports,
-		"total": total,
-		"page":  page,
+	response.Success(c, gin.H{
+		"list":      reports,
+		"total":     total,
+		"page":      page,
+		"page_size": pageSize,
 	})
 }
 

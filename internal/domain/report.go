@@ -58,7 +58,7 @@ func (Report) TableName() string {
 type ReportRepository interface {
 	Create(report *Report) error
 	FindByID(id uint) (*Report, error)
-	List(page, pageSize int) ([]Report, int64, error)
+	List(page, pageSize int, authorID *uint) ([]Report, int64, error)
 	Update(report *Report) error
 }
 
@@ -80,6 +80,6 @@ type ReportUpdateInput struct {
 type ReportService interface {
 	SubmitReport(report *Report) error
 	GetReport(id uint) (*Report, error)
-	ListReports(page, pageSize int) ([]Report, int64, error)
+	ListReports(page, pageSize int, userID uint, userRole string) ([]Report, int64, error)
 	UpdateReport(id uint, userID uint, userRole string, input *ReportUpdateInput) (*Report, error)
 }

@@ -32,24 +32,33 @@ func (r *reportRepo) FindByID(id uint) (*domain.Report, error) {
 }
 
 // List 分页获取报告列表
-func (r *reportRepo) List(page, pageSize int) ([]domain.Report, int64, error) {
+// authorID 为 nil 时查询所有报告，否则只查询指定用户的报告
+func (r *reportRepo) List(page, pageSize int, authorID *uint) ([]domain.Report, int64, error) {
 	var reports []domain.Report
 	var total int64
 
 	// 1. 计算 Offset
 	offset := (page - 1) * pageSize
 
-	// 2. 开启一个查询会话
-	query := r.db.Model(&domain.Report{})
+	// 2. 构建基础查询条件
+	baseQuery := r.db.Model(&domain.Report{})
+	if authorID != nil {
+		baseQuery = baseQuery.Where("author_id = ?", *authorID)
+	}
 
-	// 3. 先查总数 (用于前端分页条显示: 共 100 条，当前第 1 页)
-	if err := query.Count(&total).Error; err != nil {
+	// 3. 查询总数（使用独立的查询避免链式调用问题）
+	if err := baseQuery.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	// 4. 查当前页数据
+	// 4. 查询当前页数据（重新构建查询）
+	dataQuery := r.db.Model(&domain.Report{})
+	if authorID != nil {
+		dataQuery = dataQuery.Where("author_id = ?", *authorID)
+	}
+
 	// Order("id desc") 保证最新的漏洞显示在最前面
-	err := query.Preload("Author").
+	err := dataQuery.Preload("Author").
 		Preload("Project").
 		Preload("VulnerabilityType").
 		Preload("SelfAssessment").

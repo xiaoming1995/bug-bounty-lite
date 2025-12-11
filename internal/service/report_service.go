@@ -65,14 +65,26 @@ func (s *reportService) GetReport(id uint) (*domain.Report, error) {
 	return s.repo.FindByID(id)
 }
 
-func (s *reportService) ListReports(page, pageSize int) ([]domain.Report, int64, error) {
+// ListReports 获取报告列表
+// - 白帽子只能查看自己提交的报告
+// - 厂商和管理员可以查看所有报告
+func (s *reportService) ListReports(page, pageSize int, userID uint, userRole string) ([]domain.Report, int64, error) {
 	if page < 1 {
 		page = 1
 	}
 	if pageSize < 1 || pageSize > 100 {
 		pageSize = 10
 	}
-	return s.repo.List(page, pageSize)
+
+	// 根据角色决定查询范围
+	var authorID *uint
+	if userRole == "whitehat" {
+		// 白帽子只能查看自己的报告
+		authorID = &userID
+	}
+	// 厂商和管理员可以查看所有报告，authorID 为 nil
+
+	return s.repo.List(page, pageSize, authorID)
 }
 
 // UpdateReport 更新报告
