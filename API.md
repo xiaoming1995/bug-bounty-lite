@@ -57,15 +57,31 @@ Bug Bounty Lite 是一个轻量级的 Web 安全众测平台后端 API，提供�
 **成功响应**:
 ```json
 {
-  "message": "操作成功",
+  "code": 200,
+  "message": "success",
   "data": { ... }
+}
+```
+
+**列表响应格式（统一）**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "list": [...],
+    "total": 100,
+    "page": 1,
+    "page_size": 10
+  }
 }
 ```
 
 **错误响应**:
 ```json
 {
-  "error": "错误描述信息"
+  "code": 400,
+  "message": "错误描述信息"
 }
 ```
 
@@ -357,52 +373,59 @@ GET /api/v1/reports?page=1&page_size=10
 成功 (200 OK):
 ```json
 {
-  "data": [
-    {
-      "id": 2,
-      "project_id": 1,
-      "project": {
-        "id": 1,
-        "name": "某科技公司官网",
-        "status": "active"
-      },
-      "vulnerability_name": "XSS跨站脚本漏洞",
-      "vulnerability_type_id": 2,
-      "vulnerability_type": {
+  "code": 200,
+  "message": "success",
+  "data": {
+    "list": [
+      {
         "id": 2,
-        "config_key": "XSS",
-        "config_value": "XSS跨站脚本",
-        "description": "跨站脚本攻击"
-      },
-      "vulnerability_impact": "可能导致用户会话劫持",
-      "self_assessment_id": 3,
-      "self_assessment": {
-        "id": 3,
-        "config_key": "MEDIUM",
-        "config_value": "中危",
-        "description": "中等风险漏洞，有一定影响"
-      },
-      "vulnerability_url": "https://example.com/vuln",
-      "vulnerability_detail": "评论功能存在XSS漏洞，攻击者可以注入恶意脚本...",
-      "attachment_url": "http://localhost:8080/uploads/reports/2024/01/abc123.pdf",
-      "severity": "Medium",
-      "status": "Pending",
-      "author_id": 1,
-      "author": {
-        "id": 1,
-        "username": "whitehat_user",
-        "role": "whitehat",
-        "created_at": "2024-01-01T00:00:00Z",
-        "updated_at": "2024-01-01T00:00:00Z"
-      },
-      "created_at": "2024-01-02T00:00:00Z",
-      "updated_at": "2024-01-02T00:00:00Z"
-    }
-  ],
-  "total": 2,
-  "page": 1
+        "project_id": 1,
+        "project": {
+          "id": 1,
+          "name": "某科技公司官网",
+          "status": "active"
+        },
+        "vulnerability_name": "XSS跨站脚本漏洞",
+        "vulnerability_type_id": 2,
+        "vulnerability_type": {
+          "id": 2,
+          "config_key": "XSS",
+          "config_value": "XSS跨站脚本",
+          "description": "跨站脚本攻击"
+        },
+        "vulnerability_impact": "可能导致用户会话劫持",
+        "self_assessment_id": 3,
+        "self_assessment": {
+          "id": 3,
+          "config_key": "MEDIUM",
+          "config_value": "中危",
+          "description": "中等风险漏洞，有一定影响"
+        },
+        "vulnerability_url": "https://example.com/vuln",
+        "vulnerability_detail": "评论功能存在XSS漏洞，攻击者可以注入恶意脚本...",
+        "attachment_url": "http://localhost:8080/uploads/reports/2024/01/abc123.pdf",
+        "severity": "Medium",
+        "status": "Pending",
+        "author_id": 1,
+        "author": {
+          "id": 1,
+          "username": "whitehat_user",
+          "role": "whitehat"
+        },
+        "created_at": "2024-01-02 10:30:00",
+        "updated_at": "2024-01-02 10:30:00"
+      }
+    ],
+    "total": 2,
+    "page": 1,
+    "page_size": 10
+  }
 }
 ```
+
+**权限说明**:
+- `whitehat`: 只能查看自己提交的报告
+- `vendor`/`admin`: 可以查看所有报告
 
 ---
 
@@ -656,19 +679,23 @@ GET /api/v1/reports/1
 成功 (200 OK):
 ```json
 {
-  "message": "获取成功",
-  "data": [
-    {
-      "id": 1,
-      "user_id": 1,
-      "phone": "13800138000",
-      "email": "newemail@example.com",
-      "name": "张三",
-      "status": "pending",
-      "created_at": "2024-01-01T00:00:00Z",
-      "updated_at": "2024-01-01T00:00:00Z"
-    }
-  ]
+  "code": 200,
+  "message": "success",
+  "data": {
+    "list": [
+      {
+        "id": 1,
+        "user_id": 1,
+        "phone": "13800138000",
+        "email": "newemail@example.com",
+        "name": "张三",
+        "status": "pending",
+        "created_at": "2024-01-01 00:00:00",
+        "updated_at": "2024-01-01 00:00:00"
+      }
+    ],
+    "total": 1
+  }
 }
 ```
 
@@ -803,19 +830,24 @@ GET /api/v1/user/info/changes/1
 成功 (200 OK):
 ```json
 {
-  "data": [
-    {
-      "id": 1,
-      "name": "某公司官网",
-      "description": "公司官方网站项目",
-      "note": "重要项目",
-      "status": "active",
-      "created_at": "2024-01-01T00:00:00Z",
-      "updated_at": "2024-01-01T00:00:00Z"
-    }
-  ],
-  "total": 1,
-  "page": 1
+  "code": 200,
+  "message": "success",
+  "data": {
+    "list": [
+      {
+        "id": 1,
+        "name": "某公司官网",
+        "description": "公司官方网站项目",
+        "note": "重要项目",
+        "status": "active",
+        "created_at": "2024-01-01 00:00:00",
+        "updated_at": "2024-01-01 00:00:00"
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "page_size": 10
+  }
 }
 ```
 
@@ -967,30 +999,35 @@ GET /api/v1/configs/vulnerability_type
 成功 (200 OK):
 ```json
 {
-  "data": [
-    {
-      "id": 1,
-      "config_type": "vulnerability_type",
-      "config_key": "SQL_INJECTION",
-      "config_value": "SQL注入",
-      "description": "SQL注入漏洞",
-      "sort_order": 1,
-      "status": "active",
-      "created_at": "2024-01-01T00:00:00Z",
-      "updated_at": "2024-01-01T00:00:00Z"
-    },
-    {
-      "id": 2,
-      "config_type": "vulnerability_type",
-      "config_key": "XSS",
-      "config_value": "XSS跨站脚本",
-      "description": "跨站脚本攻击",
-      "sort_order": 2,
-      "status": "active",
-      "created_at": "2024-01-01T00:00:00Z",
-      "updated_at": "2024-01-01T00:00:00Z"
-    }
-  ]
+  "code": 200,
+  "message": "success",
+  "data": {
+    "list": [
+      {
+        "id": 1,
+        "config_type": "vulnerability_type",
+        "config_key": "SQL_INJECTION",
+        "config_value": "SQL注入",
+        "description": "SQL注入漏洞",
+        "sort_order": 1,
+        "status": "active",
+        "created_at": "2024-01-01 00:00:00",
+        "updated_at": "2024-01-01 00:00:00"
+      },
+      {
+        "id": 2,
+        "config_type": "vulnerability_type",
+        "config_key": "XSS",
+        "config_value": "XSS跨站脚本",
+        "description": "跨站脚本攻击",
+        "sort_order": 2,
+        "status": "active",
+        "created_at": "2024-01-01 00:00:00",
+        "updated_at": "2024-01-01 00:00:00"
+      }
+    ],
+    "total": 2
+  }
 }
 ```
 

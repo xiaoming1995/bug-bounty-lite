@@ -82,9 +82,10 @@ func (h *ProjectHandler) ListHandler(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{
-		"data":  projects,
-		"total": total,
-		"page":  page,
+		"list":      projects,
+		"total":     total,
+		"page":      page,
+		"page_size": pageSize,
 	})
 }
 

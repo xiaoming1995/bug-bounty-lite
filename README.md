@@ -280,14 +280,14 @@ export JWT_SECRET="your-secret-key"
 ### 主要 API 端点
 
 #### 认证相关
-- `POST /api/v1/auth/register` - 用户注册
-- `POST /api/v1/auth/login` - 用户登录
+  - `POST /api/v1/auth/register` - 用户注册
+  - `POST /api/v1/auth/login` - 用户登录
 
 #### 漏洞报告相关（需认证）
 - `POST /api/v1/reports` - 提交漏洞报告（支持项目关联、漏洞类型等新字段）
 - `GET /api/v1/reports` - 获取报告列表（支持关联查询）
-- `GET /api/v1/reports/:id` - 获取报告详情
-- `PUT /api/v1/reports/:id` - 更新报告
+  - `GET /api/v1/reports/:id` - 获取报告详情
+  - `PUT /api/v1/reports/:id` - 更新报告
 
 #### 项目管理（需认证）
 - `POST /api/v1/projects` - 创建项目（仅admin）
@@ -307,9 +307,9 @@ export JWT_SECRET="your-secret-key"
 - `POST /api/v1/upload` - 上传文件（单文件，最大10MB）
 
 #### 用户信息变更（需认证）
-- `POST /api/v1/user/info/change` - 提交信息变更申请
-- `GET /api/v1/user/info/changes` - 获取变更申请列表
-- `GET /api/v1/user/info/changes/:id` - 获取变更申请详情
+  - `POST /api/v1/user/info/change` - 提交信息变更申请
+  - `GET /api/v1/user/info/changes` - 获取变更申请列表
+  - `GET /api/v1/user/info/changes/:id` - 获取变更申请详情
 
 ## 🗄️ 数据库文档
 

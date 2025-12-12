@@ -58,7 +58,10 @@ func (h *SystemConfigHandler) GetConfigsByTypeHandler(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, configs)
+	response.Success(c, gin.H{
+		"list":  configs,
+		"total": len(configs),
+	})
 }
 
 // GetConfigHandler 获取配置详情

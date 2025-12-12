@@ -79,8 +79,11 @@ func (h *UserInfoChangeHandler) GetUserChangeRequests(c *gin.Context) {
 		return
 	}
 
-	// 3. 返回成功响应
-	response.SuccessWithMessage(c, "获取成功", requests)
+	// 3. 返回成功响应（统一列表格式）
+	response.Success(c, gin.H{
+		"list":  requests,
+		"total": len(requests),
+	})
 }
 
 // GetChangeRequest 获取单个变更申请详情
