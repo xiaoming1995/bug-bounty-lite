@@ -4,6 +4,8 @@ import (
 	"bug-bounty-lite/internal/domain"
 	"fmt"
 	"log"
+	"math/rand"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -18,63 +20,64 @@ func NewUserSeeder(db *gorm.DB) *UserSeeder {
 	return &UserSeeder{db: db}
 }
 
-// Seed 填充用户测试数据
+// Seed 填充用户测试数据（追加模式）
 func (s *UserSeeder) Seed(force bool) error {
-	// 检查是否已存在测试用户
-	var count int64
-	s.db.Model(&domain.User{}).Where("username LIKE ?", "whitehat_%").Count(&count)
+	// 初始化随机数生成器
+	rand.Seed(time.Now().UnixNano())
 
-	if count > 0 && !force {
-		fmt.Printf("[INFO] Test users already exist (%d found), skipping seed (use -force to override)\n", count)
-		return nil
-	}
-
-	testUsers := []struct {
-		Username string
-		Password string
-		Role     string
-		Name     string
-		Email    string
-		Phone    string
+	// 用户模板
+	userTemplates := []struct {
+		RolePrefix string
+		Role       string
+		NamePrefix string
 	}{
-		{"whitehat_zhang", "password123", "whitehat", "张三", "zhang@example.com", "13800138001"},
-		{"whitehat_li", "password123", "whitehat", "李四", "li@example.com", "13800138002"},
-		{"whitehat_wang", "password123", "whitehat", "王五", "wang@example.com", "13800138003"},
-		{"whitehat_zhao", "password123", "whitehat", "赵六", "zhao@example.com", "13800138004"},
-		{"whitehat_chen", "password123", "whitehat", "陈七", "chen@example.com", "13800138005"},
-		{"vendor_test", "password123", "vendor", "测试厂商", "vendor@example.com", "13900139001"},
-		{"admin_test", "admin123", "admin", "测试管理员", "admin@example.com", "13900139002"},
+		{"whitehat", "whitehat", "白帽子"},
+		{"whitehat", "whitehat", "安全研究员"},
+		{"whitehat", "whitehat", "渗透测试"},
+		{"vendor", "vendor", "厂商"},
+		{"admin", "admin", "管理员"},
 	}
+
+	// 生成 5-10 个新用户（每次执行都生成新的）
+	numUsers := rand.Intn(6) + 5
+	fmt.Printf("[INFO] Generating %d new users...\n", numUsers)
 
 	successCount := 0
-	for _, u := range testUsers {
-		var user domain.User
-		if err := s.db.Where("username = ?", u.Username).First(&user).Error; err != nil {
-			// 用户不存在，创建
-			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
-			if err != nil {
-				return fmt.Errorf("failed to hash password: %w", err)
-			}
-			user = domain.User{
-				Username: u.Username,
-				Password: string(hashedPassword),
-				Role:     u.Role,
-				Name:     u.Name,
-				Email:    u.Email,
-				Phone:    u.Phone,
-			}
-			if err := s.db.Create(&user).Error; err != nil {
-				log.Printf("[WARN] Failed to create user %s: %v", u.Username, err)
-				continue
-			}
-			successCount++
-			fmt.Printf("[OK] Created: %s (%s) - %s | Password: %s\n", u.Username, u.Name, u.Role, u.Password)
-		} else {
-			fmt.Printf("[SKIP] User '%s' already exists (ID: %d)\n", u.Username, user.ID)
+	for i := 0; i < numUsers; i++ {
+		template := userTemplates[rand.Intn(len(userTemplates))]
+		timestamp := time.Now().UnixNano()
+		suffix := fmt.Sprintf("%d", timestamp/1000000+int64(i))
+
+		username := fmt.Sprintf("%s_%s", template.RolePrefix, suffix)
+		password := "password123"
+
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			return fmt.Errorf("failed to hash password: %w", err)
 		}
+
+		user := domain.User{
+			Username: username,
+			Password: string(hashedPassword),
+			Role:     template.Role,
+			Name:     fmt.Sprintf("%s%d", template.NamePrefix, i+1),
+			Email:    fmt.Sprintf("%s@example.com", username),
+			Phone:    fmt.Sprintf("138%08d", rand.Intn(100000000)),
+		}
+
+		if err := s.db.Create(&user).Error; err != nil {
+			log.Printf("[WARN] Failed to create user %s: %v", user.Username, err)
+			continue
+		}
+
+		successCount++
+		fmt.Printf("[OK] Created: %s (%s) - %s | Password: %s\n", user.Username, user.Name, user.Role, password)
+
+		// 短暂延迟确保时间戳不同
+		time.Sleep(time.Millisecond)
 	}
 
-	fmt.Printf("\n[INFO] Seeded %d/%d users successfully\n", successCount, len(testUsers))
+	fmt.Printf("\n[INFO] Seeded %d/%d users successfully\n", successCount, numUsers)
 
 	// 打印统计
 	s.printStatistics()

@@ -4,6 +4,8 @@ import (
 	"bug-bounty-lite/internal/domain"
 	"fmt"
 	"log"
+	"math/rand"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -17,19 +19,20 @@ func NewProjectSeeder(db *gorm.DB) *ProjectSeeder {
 	return &ProjectSeeder{db: db}
 }
 
-// Seed 填充项目测试数据
+// Seed 填充项目测试数据（追加模式）
 func (s *ProjectSeeder) Seed(force bool) error {
-	var count int64
-	s.db.Model(&domain.Project{}).Count(&count)
+	// 初始化随机数生成器
+	rand.Seed(time.Now().UnixNano())
 
-	if count > 0 && !force {
-		fmt.Println("[INFO] Projects already exist, skipping seed (use -force to override)")
-		return nil
-	}
-
-	projects := []domain.Project{
+	// 项目模板
+	projectTemplates := []struct {
+		Name        string
+		Description string
+		Note        string
+		Status      string
+	}{
 		{
-			Name:        "某科技公司官网",
+			Name:        "科技公司官网",
 			Description: "公司官方网站，包含用户注册、登录、产品展示等功能",
 			Note:        "重要项目，需要重点关注安全漏洞",
 			Status:      "active",
@@ -76,39 +79,35 @@ func (s *ProjectSeeder) Seed(force bool) error {
 			Note:        "需要关注文件上传和权限控制",
 			Status:      "active",
 		},
-		{
-			Name:        "API网关服务",
-			Description: "统一API网关，提供接口路由、限流、认证等功能",
-			Note:        "核心基础设施，需要高可用性",
-			Status:      "active",
-		},
-		{
-			Name:        "测试项目（已归档）",
-			Description: "这是一个已归档的测试项目",
-			Note:        "测试用项目，已不再使用",
-			Status:      "inactive",
-		},
 	}
 
+	// 生成 5-8 个新项目（每次执行都生成新的）
+	numProjects := rand.Intn(4) + 5
+	fmt.Printf("[INFO] Generating %d new projects...\n", numProjects)
+
 	successCount := 0
-	for _, project := range projects {
-		// 检查是否已存在（根据名称）
-		var existing domain.Project
-		if err := s.db.Where("name = ?", project.Name).First(&existing).Error; err == nil {
-			if !force {
-				fmt.Printf("[SKIP] Project '%s' already exists\n", project.Name)
-				continue
-			}
+	for i := 0; i < numProjects; i++ {
+		template := projectTemplates[rand.Intn(len(projectTemplates))]
+		timestamp := time.Now().UnixNano()
+
+		project := domain.Project{
+			Name:        fmt.Sprintf("%s_%d", template.Name, timestamp/1000000+int64(i)),
+			Description: template.Description,
+			Note:        template.Note,
+			Status:      template.Status,
 		}
 
 		if err := s.db.Create(&project).Error; err != nil {
 			log.Printf("[WARN] Failed to create project %s: %v", project.Name, err)
 		} else {
 			successCount++
-			fmt.Printf("[OK] Created project: %s\n", project.Name)
+			fmt.Printf("[OK] Created project: %s (ID: %d)\n", project.Name, project.ID)
 		}
+
+		// 短暂延迟确保时间戳不同
+		time.Sleep(time.Millisecond)
 	}
 
-	fmt.Printf("[INFO] Seeded %d/%d projects successfully\n", successCount, len(projects))
+	fmt.Printf("[INFO] Seeded %d/%d projects successfully\n", successCount, numProjects)
 	return nil
 }

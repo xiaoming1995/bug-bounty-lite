@@ -19,7 +19,7 @@ func NewReportSeeder(db *gorm.DB) *ReportSeeder {
 	return &ReportSeeder{db: db}
 }
 
-// Seed 填充报告测试数据
+// Seed 填充报告测试数据（追加模式）
 func (s *ReportSeeder) Seed(force bool) error {
 	// 1. 获取白帽子用户
 	fmt.Println("\n[Step 1] Loading whitehat users...")
@@ -28,12 +28,9 @@ func (s *ReportSeeder) Seed(force bool) error {
 		return fmt.Errorf("failed to get whitehat users: %w", err)
 	}
 	if len(whitehats) == 0 {
-		return fmt.Errorf("no whitehat users found, please run 'make seed-users' first")
+		return fmt.Errorf("no whitehat users found, please run seed-users first")
 	}
 	fmt.Printf("[INFO] Found %d whitehat users\n", len(whitehats))
-	for _, u := range whitehats {
-		fmt.Printf("   - %s (%s)\n", u.Username, u.Name)
-	}
 
 	// 2. 获取项目列表
 	fmt.Println("\n[Step 2] Loading projects...")
@@ -42,7 +39,7 @@ func (s *ReportSeeder) Seed(force bool) error {
 		return fmt.Errorf("failed to get projects: %w", err)
 	}
 	if len(projects) == 0 {
-		return fmt.Errorf("no active projects found, please run 'make seed-projects' first")
+		return fmt.Errorf("no active projects found, please run seed-projects first")
 	}
 	fmt.Printf("[INFO] Found %d active projects\n", len(projects))
 
@@ -70,16 +67,8 @@ func (s *ReportSeeder) Seed(force bool) error {
 		fmt.Printf("[INFO] Found %d severity levels\n", len(severityLevels))
 	}
 
-	// 5. 检查是否已存在报告数据
-	var count int64
-	s.db.Model(&domain.Report{}).Count(&count)
-	if count > 0 && !force {
-		fmt.Printf("[INFO] %d reports already exist, skipping seed (use -force to override)\n", count)
-		return nil
-	}
-
-	// 6. 生成测试报告数据
-	fmt.Println("\n[Step 5] Generating test reports...")
+	// 5. 生成测试报告数据（每次都生成新的）
+	fmt.Println("\n[Step 5] Generating new test reports...")
 	return s.generateReports(whitehats, projects, vulnTypes, severityLevels, force)
 }
 
@@ -249,12 +238,18 @@ func (s *ReportSeeder) generateReports(whitehats []domain.User, projects []domai
 		vulnTypeMap[vt.ConfigKey] = vt
 	}
 
+	// 每次生成 10-16 个随机报告（追加模式）
+	numReports := rand.Intn(7) + 10
+	fmt.Printf("[INFO] Generating %d new reports...\n", numReports)
+
 	successCount := 0
-	for i, template := range reportTemplates {
-		// 分配用户（轮询方式确保每个用户都有报告）
-		author := whitehats[i%len(whitehats)]
-		// 分配项目（轮询方式确保每个项目都有报告）
-		project := projects[i%len(projects)]
+	for i := 0; i < numReports; i++ {
+		// 随机选择一个报告模板
+		template := reportTemplates[rand.Intn(len(reportTemplates))]
+
+		// 随机分配用户和项目
+		author := whitehats[rand.Intn(len(whitehats))]
+		project := projects[rand.Intn(len(projects))]
 
 		// 匹配漏洞类型，如果找不到则随机选择
 		var vulnType domain.SystemConfig
@@ -271,9 +266,13 @@ func (s *ReportSeeder) generateReports(whitehats []domain.User, projects []domai
 			selfAssessmentID = &id
 		}
 
+		// 添加时间戳使漏洞名称唯一
+		timestamp := time.Now().UnixNano()
+		uniqueName := fmt.Sprintf("%s_%d", template.VulnerabilityName, timestamp/1000000+int64(i))
+
 		report := domain.Report{
 			ProjectID:           project.ID,
-			VulnerabilityName:   template.VulnerabilityName,
+			VulnerabilityName:   uniqueName,
 			VulnerabilityTypeID: vulnType.ID,
 			VulnerabilityImpact: template.VulnerabilityImpact,
 			SelfAssessmentID:    selfAssessmentID,
@@ -284,32 +283,26 @@ func (s *ReportSeeder) generateReports(whitehats []domain.User, projects []domai
 			AuthorID:            author.ID,
 		}
 
-		// 检查是否已存在（根据漏洞名称和项目ID）
-		var existing domain.Report
-		if err := s.db.Where("vulnerability_name = ? AND project_id = ?", report.VulnerabilityName, report.ProjectID).First(&existing).Error; err == nil {
-			if !force {
-				fmt.Printf("[SKIP] Report '%s' already exists for project '%s'\n", report.VulnerabilityName, project.Name)
-				continue
-			}
-		}
-
 		if err := s.db.Create(&report).Error; err != nil {
 			log.Printf("[WARN] Failed to create report #%d: %v", i+1, err)
 		} else {
 			successCount++
 			fmt.Printf("[OK] #%d %s | 项目: %s | 提交者: %s (%s) | 类型: %s | 状态: %s\n",
 				report.ID,
-				truncateString(report.VulnerabilityName, 20),
-				truncateString(project.Name, 12),
+				truncateString(report.VulnerabilityName, 30),
+				truncateString(project.Name, 15),
 				author.Name,
 				author.Username,
 				vulnType.ConfigValue,
 				report.Status,
 			)
 		}
+
+		// 短暂延迟确保时间戳不同
+		time.Sleep(time.Millisecond)
 	}
 
-	fmt.Printf("\n[INFO] Seeded %d/%d reports successfully\n", successCount, len(reportTemplates))
+	fmt.Printf("\n[INFO] Seeded %d/%d reports successfully\n", successCount, numReports)
 
 	// 打印统计信息
 	s.printStatistics()
