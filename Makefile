@@ -71,8 +71,8 @@ seed-reports-force:
 	go run cmd/seed-reports/main.go -force
 
 ## seed-all: 填充所有测试数据（项目、用户、报告）
-seed-all: seed-projects seed-users seed-reports
-	@echo "[OK] All test data seeded successfully!"
+seed-all:
+	go run cmd/seed-all/main.go
 
 # ===========================
 # 测试命令

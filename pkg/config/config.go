@@ -2,6 +2,8 @@ package config
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"github.com/spf13/viper"
 )
 
@@ -35,9 +37,25 @@ func LoadConfig() *Config {
 	viper.SetConfigType("yaml")   // 文件类型
 
 	// 2. 设置查找路径 (按顺序查找)
-	// 建议添加多个路径，防止在不同目录下运行 go run 找不到文件
-	viper.AddConfigPath("./config") // 相对路径 config/
-	viper.AddConfigPath(".")        // 当前目录
+	// 支持 Windows 和 Unix 系统的路径
+	configPaths := []string{
+		"./config",                    // 从项目根目录运行
+		".",                           // 当前目录
+		filepath.Join("..", "..", "config"),  // 从 cmd/xxx/ 目录运行
+		filepath.Join("..", "config"),        // 从 cmd/ 目录运行
+		filepath.Join("..", "..", "..", "config"), // 从更深层目录运行
+	}
+
+	// 尝试获取当前工作目录
+	if wd, err := os.Getwd(); err == nil {
+		// 添加当前工作目录的 config 子目录
+		configPaths = append(configPaths, filepath.Join(wd, "config"))
+	}
+
+	// 添加所有配置路径
+	for _, path := range configPaths {
+		viper.AddConfigPath(path)
+	}
 
 	// 3. 读取环境变量 (可选，用于 Docker 部署时覆盖配置)
 	viper.AutomaticEnv()
@@ -56,6 +74,7 @@ func LoadConfig() *Config {
 
 	// 简单打印一下，确认加载成功 (生产环境建议用 Logger)
 	fmt.Printf("[OK] Configuration loaded successfully. Mode: %s\n", cfg.Server.Mode)
+	fmt.Printf("[OK] Config file used: %s\n", viper.ConfigFileUsed())
 
 	return &cfg
 }
