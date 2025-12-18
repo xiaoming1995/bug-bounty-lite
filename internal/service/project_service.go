@@ -29,7 +29,7 @@ func (s *projectService) CreateProject(project *domain.Project) error {
 	return s.repo.Create(project)
 }
 
-// GetProject 获取项目详情
+// GetProject 获取项目详情（不包含已删除的）
 func (s *projectService) GetProject(id uint, includeInactive bool) (*domain.Project, error) {
 	project, err := s.repo.FindByID(id)
 	if err != nil {
@@ -44,7 +44,16 @@ func (s *projectService) GetProject(id uint, includeInactive bool) (*domain.Proj
 	return project, nil
 }
 
-// ListProjects 获取项目列表
+// GetProjectWithDeleted 获取项目详情（包含已删除的，仅管理员使用）
+func (s *projectService) GetProjectWithDeleted(id uint) (*domain.Project, error) {
+	project, err := s.repo.FindByIDWithDeleted(id)
+	if err != nil {
+		return nil, errors.New("项目不存在")
+	}
+	return project, nil
+}
+
+// ListProjects 获取项目列表（不包含已删除的）
 func (s *projectService) ListProjects(page, pageSize int, includeInactive bool) ([]domain.Project, int64, error) {
 	// 参数校验
 	if page < 1 {
@@ -55,6 +64,19 @@ func (s *projectService) ListProjects(page, pageSize int, includeInactive bool) 
 	}
 
 	return s.repo.List(page, pageSize, includeInactive)
+}
+
+// ListProjectsWithDeleted 获取项目列表（包含已删除的，仅管理员使用）
+func (s *projectService) ListProjectsWithDeleted(page, pageSize int) ([]domain.Project, int64, error) {
+	// 参数校验
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 10
+	}
+
+	return s.repo.ListWithDeleted(page, pageSize)
 }
 
 // UpdateProject 更新项目
@@ -91,7 +113,7 @@ func (s *projectService) UpdateProject(id uint, input *domain.ProjectUpdateInput
 	return project, nil
 }
 
-// DeleteProject 删除项目
+// DeleteProject 软删除项目
 func (s *projectService) DeleteProject(id uint) error {
 	// 检查项目是否存在
 	_, err := s.repo.FindByID(id)
@@ -102,3 +124,18 @@ func (s *projectService) DeleteProject(id uint) error {
 	return s.repo.Delete(id)
 }
 
+// RestoreProject 恢复已删除的项目
+func (s *projectService) RestoreProject(id uint) error {
+	// 检查项目是否存在（包含已删除的）
+	project, err := s.repo.FindByIDWithDeleted(id)
+	if err != nil {
+		return errors.New("项目不存在")
+	}
+
+	// 检查项目是否已被删除
+	if !project.DeletedAt.Valid {
+		return errors.New("项目未被删除，无需恢复")
+	}
+
+	return s.repo.Restore(id)
+}

@@ -151,7 +151,7 @@ func (h *ProjectHandler) UpdateHandler(c *gin.Context) {
 	response.Success(c, project)
 }
 
-// DeleteHandler 删除项目
+// DeleteHandler 删除项目（软删除）
 // DELETE /api/v1/projects/:id
 func (h *ProjectHandler) DeleteHandler(c *gin.Context) {
 	// 权限检查：只有 admin 可以删除项目
@@ -176,3 +176,27 @@ func (h *ProjectHandler) DeleteHandler(c *gin.Context) {
 	response.SuccessWithMessage(c, "项目删除成功", nil)
 }
 
+// RestoreHandler 恢复已删除的项目
+// POST /api/v1/projects/:id/restore
+func (h *ProjectHandler) RestoreHandler(c *gin.Context) {
+	// 权限检查：只有 admin 可以恢复项目
+	role, exists := c.Get("role")
+	if !exists || role.(string) != "admin" {
+		response.Error(c, http.StatusForbidden, "只有管理员可以恢复项目")
+		return
+	}
+
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "无效的项目ID")
+		return
+	}
+
+	if err := h.Service.RestoreProject(uint(id)); err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.SuccessWithMessage(c, "项目恢复成功", nil)
+}

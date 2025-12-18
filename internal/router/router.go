@@ -109,11 +109,12 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 		projects := api.Group("/projects")
 		projects.Use(middleware.AuthMiddleware(jwtManager))
 		{
-			projects.POST("", projectHandler.CreateHandler)       // 创建项目（仅admin）
-			projects.GET("", projectHandler.ListHandler)          // 获取项目列表
-			projects.GET("/:id", projectHandler.GetHandler)       // 获取项目详情
-			projects.PUT("/:id", projectHandler.UpdateHandler)    // 更新项目（仅admin）
-			projects.DELETE("/:id", projectHandler.DeleteHandler) // 删除项目（仅admin）
+			projects.POST("", projectHandler.CreateHandler)              // 创建项目（仅admin）
+			projects.GET("", projectHandler.ListHandler)                 // 获取项目列表
+			projects.GET("/:id", projectHandler.GetHandler)              // 获取项目详情
+			projects.PUT("/:id", projectHandler.UpdateHandler)           // 更新项目（仅admin）
+			projects.DELETE("/:id", projectHandler.DeleteHandler)        // 软删除项目（仅admin）
+			projects.POST("/:id/restore", projectHandler.RestoreHandler) // 恢复已删除项目（仅admin）
 		}
 
 		// 需要认证的路由 - System Configs
