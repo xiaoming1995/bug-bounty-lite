@@ -42,6 +42,9 @@ func (m *Migrator) Run() error {
 		return err
 	}
 
+	// 删除 reports 表的外键约束（改用代码逻辑验证）
+	m.dropForeignKeys()
+
 	// 添加表注释 (MySQL)
 	m.addTableComments()
 
@@ -70,6 +73,46 @@ func (m *Migrator) Run() error {
 	fmt.Printf("[INFO] Current tables: %v\n", afterTables)
 
 	return nil
+}
+
+// dropForeignKeys 删除 reports 表的外键约束
+func (m *Migrator) dropForeignKeys() {
+	fmt.Println("[INFO] Checking and removing foreign key constraints...")
+
+	// 查询 reports 表的所有外键
+	type ForeignKey struct {
+		ConstraintName string `gorm:"column:CONSTRAINT_NAME"`
+	}
+
+	var foreignKeys []ForeignKey
+	query := `
+		SELECT CONSTRAINT_NAME 
+		FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
+		WHERE TABLE_SCHEMA = DATABASE() 
+		AND TABLE_NAME = 'reports' 
+		AND CONSTRAINT_TYPE = 'FOREIGN KEY'
+	`
+
+	if err := m.db.Raw(query).Scan(&foreignKeys).Error; err != nil {
+		log.Printf("[WARN] Failed to query foreign keys: %v", err)
+		return
+	}
+
+	if len(foreignKeys) == 0 {
+		fmt.Println("[INFO] No foreign keys found on reports table")
+		return
+	}
+
+	fmt.Printf("[INFO] Found %d foreign key(s) to remove\n", len(foreignKeys))
+
+	for _, fk := range foreignKeys {
+		sql := fmt.Sprintf("ALTER TABLE `reports` DROP FOREIGN KEY `%s`", fk.ConstraintName)
+		if err := m.db.Exec(sql).Error; err != nil {
+			log.Printf("[WARN] Failed to drop foreign key %s: %v", fk.ConstraintName, err)
+		} else {
+			fmt.Printf("[OK] Dropped foreign key: %s\n", fk.ConstraintName)
+		}
+	}
 }
 
 // addTableComments 添加表级别注释 (MySQL)

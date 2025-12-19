@@ -90,10 +90,12 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 		reports := api.Group("/reports")
 		reports.Use(middleware.AuthMiddleware(jwtManager))
 		{
-			reports.POST("", reportHandler.CreateHandler)    // 提交
-			reports.GET("", reportHandler.ListHandler)       // 列表
-			reports.GET("/:id", reportHandler.GetHandler)    // 详情
-			reports.PUT("/:id", reportHandler.UpdateHandler) // 更新
+			reports.POST("", reportHandler.CreateHandler)              // 提交
+			reports.GET("", reportHandler.ListHandler)                 // 列表
+			reports.GET("/:id", reportHandler.GetHandler)              // 详情
+			reports.PUT("/:id", reportHandler.UpdateHandler)           // 更新
+			reports.DELETE("/:id", reportHandler.DeleteHandler)        // 软删除
+			reports.POST("/:id/restore", reportHandler.RestoreHandler) // 恢复已删除
 		}
 
 		// 需要认证的路由 - User Info Change

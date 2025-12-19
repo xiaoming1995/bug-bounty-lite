@@ -3,17 +3,18 @@ package service
 import (
 	"bug-bounty-lite/internal/domain"
 	"errors"
+
 	"gorm.io/gorm"
 )
 
 type reportService struct {
-	repo            domain.ReportRepository
+	repo             domain.ReportRepository
 	systemConfigRepo domain.SystemConfigRepository
 }
 
 func NewReportService(repo domain.ReportRepository, systemConfigRepo domain.SystemConfigRepository) domain.ReportService {
 	return &reportService{
-		repo:            repo,
+		repo:             repo,
 		systemConfigRepo: systemConfigRepo,
 	}
 }
@@ -185,4 +186,43 @@ func isValidStatusTransition(from, to string) bool {
 		}
 	}
 	return false
+}
+
+// DeleteReport 软删除报告
+func (s *reportService) DeleteReport(id uint, userID uint, userRole string) error {
+	// 1. 获取报告
+	report, err := s.repo.FindByID(id)
+	if err != nil {
+		return errors.New("报告不存在")
+	}
+
+	// 2. 权限校验：只有报告作者或管理员可以删除
+	if report.AuthorID != userID && userRole != "admin" {
+		return errors.New("没有权限删除此报告")
+	}
+
+	// 3. 执行软删除
+	return s.repo.Delete(id)
+}
+
+// RestoreReport 恢复已删除的报告
+func (s *reportService) RestoreReport(id uint, userID uint, userRole string) error {
+	// 1. 只有管理员可以恢复报告
+	if userRole != "admin" {
+		return errors.New("只有管理员可以恢复报告")
+	}
+
+	// 2. 检查报告是否存在（包含已删除的）
+	report, err := s.repo.FindByIDWithDeleted(id)
+	if err != nil {
+		return errors.New("报告不存在")
+	}
+
+	// 3. 检查报告是否已被删除
+	if !report.DeletedAt.Valid {
+		return errors.New("报告未被删除，无需恢复")
+	}
+
+	// 4. 执行恢复
+	return s.repo.Restore(id)
 }

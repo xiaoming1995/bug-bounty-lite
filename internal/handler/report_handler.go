@@ -180,3 +180,63 @@ func (h *ReportHandler) UpdateHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"data": report})
 }
+
+// DeleteHandler 删除报告（软删除）
+// DELETE /api/v1/reports/:id
+func (h *ReportHandler) DeleteHandler(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		response.BadRequest(c, "无效的报告ID")
+		return
+	}
+
+	// 获取当前用户信息
+	userID, exists := c.Get("userID")
+	if !exists {
+		response.Unauthorized(c, "用户未认证")
+		return
+	}
+	role, _ := c.Get("role")
+	userRole := "whitehat"
+	if role != nil {
+		userRole = role.(string)
+	}
+
+	if err := h.Service.DeleteReport(uint(id), userID.(uint), userRole); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.SuccessWithMessage(c, "报告删除成功", nil)
+}
+
+// RestoreHandler 恢复已删除的报告
+// POST /api/v1/reports/:id/restore
+func (h *ReportHandler) RestoreHandler(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		response.BadRequest(c, "无效的报告ID")
+		return
+	}
+
+	// 获取当前用户信息
+	userID, exists := c.Get("userID")
+	if !exists {
+		response.Unauthorized(c, "用户未认证")
+		return
+	}
+	role, _ := c.Get("role")
+	userRole := "whitehat"
+	if role != nil {
+		userRole = role.(string)
+	}
+
+	if err := h.Service.RestoreReport(uint(id), userID.(uint), userRole); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.SuccessWithMessage(c, "报告恢复成功", nil)
+}
