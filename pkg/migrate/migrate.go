@@ -42,6 +42,9 @@ func (m *Migrator) Run() error {
 		return err
 	}
 
+	// 确保 deleted_at 列存在（手动添加，防止 AutoMigrate 没有正确添加）
+	m.ensureDeletedAtColumns()
+
 	// 删除 reports 表的外键约束（改用代码逻辑验证）
 	m.dropForeignKeys()
 
@@ -50,11 +53,6 @@ func (m *Migrator) Run() error {
 
 	// 添加字段注释 (MySQL)
 	m.addColumnComments()
-
-	// 添加初始数据
-	if err := m.seedInitialData(); err != nil {
-		log.Printf("[WARN] Failed to seed initial data: %v", err)
-	}
 
 	// 获取迁移后的表信息
 	afterTables := m.getTableNames()
@@ -73,6 +71,51 @@ func (m *Migrator) Run() error {
 	fmt.Printf("[INFO] Current tables: %v\n", afterTables)
 
 	return nil
+}
+
+// ensureDeletedAtColumns 确保 deleted_at 列存在于 projects 和 reports 表
+func (m *Migrator) ensureDeletedAtColumns() {
+	fmt.Println("[INFO] Ensuring deleted_at columns exist...")
+
+	tables := []string{"projects", "reports"}
+
+	for _, table := range tables {
+		// 检查列是否存在
+		var count int64
+		query := fmt.Sprintf(`
+			SELECT COUNT(*) 
+			FROM INFORMATION_SCHEMA.COLUMNS 
+			WHERE TABLE_SCHEMA = DATABASE() 
+			AND TABLE_NAME = '%s' 
+			AND COLUMN_NAME = 'deleted_at'
+		`, table)
+
+		if err := m.db.Raw(query).Scan(&count).Error; err != nil {
+			log.Printf("[WARN] Failed to check deleted_at column for %s: %v", table, err)
+			continue
+		}
+
+		if count == 0 {
+			// 列不存在，添加它
+			sql := fmt.Sprintf("ALTER TABLE `%s` ADD COLUMN `deleted_at` DATETIME(3) NULL DEFAULT NULL", table)
+			if err := m.db.Exec(sql).Error; err != nil {
+				log.Printf("[WARN] Failed to add deleted_at column to %s: %v", table, err)
+			} else {
+				fmt.Printf("[OK] Added deleted_at column to %s\n", table)
+			}
+
+			// 添加索引
+			indexSQL := fmt.Sprintf("CREATE INDEX `idx_%s_deleted_at` ON `%s` (`deleted_at`)", table, table)
+			if err := m.db.Exec(indexSQL).Error; err != nil {
+				// 索引可能已存在，忽略错误
+				log.Printf("[INFO] Index on deleted_at for %s may already exist: %v", table, err)
+			} else {
+				fmt.Printf("[OK] Added index on deleted_at for %s\n", table)
+			}
+		} else {
+			fmt.Printf("[INFO] deleted_at column already exists in %s\n", table)
+		}
+	}
 }
 
 // dropForeignKeys 删除 reports 表的外键约束

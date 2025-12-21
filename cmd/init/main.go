@@ -81,10 +81,15 @@ func (i *Initializer) Init(force bool) error {
 	return nil
 }
 
-// initSystemConfigs 初始化系统配置数据（危害等级等）
+// initSystemConfigs 初始化系统配置数据（危害等级、漏洞类型等）
 func (i *Initializer) initSystemConfigs(force bool) error {
 	// 初始化危害等级
 	if err := i.initSeverityLevels(force); err != nil {
+		return err
+	}
+
+	// 初始化漏洞类型
+	if err := i.initVulnerabilityTypes(force); err != nil {
 		return err
 	}
 
@@ -168,3 +173,47 @@ func (i *Initializer) initSeverityLevels(force bool) error {
 	return nil
 }
 
+// initVulnerabilityTypes 初始化漏洞类型
+func (i *Initializer) initVulnerabilityTypes(force bool) error {
+	var count int64
+	i.db.Model(&domain.SystemConfig{}).Where("config_type = ?", "vulnerability_type").Count(&count)
+
+	if count > 0 && !force {
+		fmt.Println("[INFO] System configs (vulnerability_type) already exist, skipping init (use -force to override)")
+		return nil
+	}
+
+	// 漏洞类型配置
+	vulnerabilityTypes := []domain.SystemConfig{
+		{ConfigType: "vulnerability_type", ConfigKey: "SQL_INJECTION", ConfigValue: "SQL注入", Description: "SQL注入漏洞", SortOrder: 1, Status: "active"},
+		{ConfigType: "vulnerability_type", ConfigKey: "XSS", ConfigValue: "XSS跨站脚本", Description: "跨站脚本攻击", SortOrder: 2, Status: "active"},
+		{ConfigType: "vulnerability_type", ConfigKey: "CSRF", ConfigValue: "CSRF跨站请求伪造", Description: "跨站请求伪造", SortOrder: 3, Status: "active"},
+		{ConfigType: "vulnerability_type", ConfigKey: "FILE_UPLOAD", ConfigValue: "文件上传漏洞", Description: "文件上传漏洞", SortOrder: 4, Status: "active"},
+		{ConfigType: "vulnerability_type", ConfigKey: "COMMAND_INJECTION", ConfigValue: "命令执行", Description: "命令注入漏洞", SortOrder: 5, Status: "active"},
+		{ConfigType: "vulnerability_type", ConfigKey: "INFORMATION_DISCLOSURE", ConfigValue: "信息泄露", Description: "敏感信息泄露", SortOrder: 6, Status: "active"},
+		{ConfigType: "vulnerability_type", ConfigKey: "PRIVILEGE_ESCALATION", ConfigValue: "权限绕过", Description: "权限提升/绕过", SortOrder: 7, Status: "active"},
+		{ConfigType: "vulnerability_type", ConfigKey: "OTHER", ConfigValue: "其他", Description: "其他类型漏洞", SortOrder: 99, Status: "active"},
+	}
+
+	successCount := 0
+	for _, config := range vulnerabilityTypes {
+		// 检查是否已存在（根据类型和键）
+		var existing domain.SystemConfig
+		if err := i.db.Where("config_type = ? AND config_key = ?", config.ConfigType, config.ConfigKey).First(&existing).Error; err == nil {
+			if !force {
+				fmt.Printf("[SKIP] System config '%s:%s' already exists\n", config.ConfigType, config.ConfigKey)
+				continue
+			}
+		}
+
+		if err := i.db.Create(&config).Error; err != nil {
+			log.Printf("[WARN] Failed to create system config %s:%s: %v", config.ConfigType, config.ConfigKey, err)
+		} else {
+			successCount++
+			fmt.Printf("[OK] Created system config: %s - %s\n", config.ConfigKey, config.ConfigValue)
+		}
+	}
+
+	fmt.Printf("[INFO] Initialized %d/%d vulnerability types successfully\n", successCount, len(vulnerabilityTypes))
+	return nil
+}
