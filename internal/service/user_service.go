@@ -5,6 +5,7 @@ import (
 	"bug-bounty-lite/pkg/jwt"
 	"errors"
 	"fmt"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -75,6 +76,11 @@ func (s *userService) Login(username, password string) (*domain.User, string, er
 	if err != nil {
 		return nil, "", errors.New("failed to generate token")
 	}
+
+	// 4. 更新最后登录时间
+	now := time.Now()
+	user.LastLoginAt = &now
+	_ = s.repo.UpdateLastLoginAt(user.ID, now)
 
 	return user, token, nil
 }

@@ -277,6 +277,11 @@ func (m *Migrator) addColumnComments() {
 			column:  "org_id",
 			comment: "所属组织ID(关联organizations表)",
 		},
+		{
+			table:   "users",
+			column:  "last_login_at",
+			comment: "最后登录时间",
+		},
 	}
 
 	for _, cc := range columnComments {

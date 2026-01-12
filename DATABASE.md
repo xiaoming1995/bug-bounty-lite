@@ -35,6 +35,7 @@
 | username | VARCHAR(64) | UNIQUE, NOT NULL | - | 用户名 |
 | password | VARCHAR(255) | NOT NULL | - | 密码(bcrypt加密) |
 | role | VARCHAR(20) | - | 'whitehat' | 用户角色 |
+| last_login_at | DATETIME(3) | - | NULL | 最后登录时间 |
 
 **索引**:
 | 索引名 | 字段 | 类型 |
@@ -154,6 +155,7 @@ Pending --> Triaged --> Resolved --> Closed
 - users:
   - 新增字段: bio (TEXT) - 个人简介
   - 新增字段: org_id (BIGINT UNSIGNED) - 所属组织ID
+  - 新增字段: last_login_at (DATETIME) - 最后登录时间
 
 **说明**:
 - 增强了用户画像系统，支持个人简介展示。

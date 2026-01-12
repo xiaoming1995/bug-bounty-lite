@@ -3,6 +3,7 @@ package repository
 import (
 	"bug-bounty-lite/internal/domain"
 	"errors"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -42,7 +43,12 @@ func (r *userRepo) FindByID(id uint) (*domain.User, error) {
 	return &user, err
 }
 
-// Update 更新用户
 func (r *userRepo) Update(user *domain.User) error {
+	// 使用 Save 进行全量更新
 	return r.db.Save(user).Error
+}
+
+// UpdateLastLoginAt 专门更新最后登录时间
+func (r *userRepo) UpdateLastLoginAt(userID uint, loginTime time.Time) error {
+	return r.db.Model(&domain.User{}).Where("id = ?", userID).Update("last_login_at", loginTime).Error
 }

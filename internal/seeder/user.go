@@ -81,6 +81,10 @@ func (s *UserSeeder) Seed(force bool) error {
 			Bio:      bios[rand.Intn(len(bios))],
 		}
 
+		// 随机模拟一个过去 24 小时内的登录时间
+		lastLogin := time.Now().Add(-time.Duration(rand.Intn(24)) * time.Hour)
+		user.LastLoginAt = &lastLogin
+
 		// 随机分配一个组织 (如果存在组织数据)
 		if len(orgIDs) > 0 {
 			user.OrgID = orgIDs[rand.Intn(len(orgIDs))]

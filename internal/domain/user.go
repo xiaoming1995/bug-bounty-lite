@@ -47,6 +47,8 @@ type User struct {
 	Bio   string        `gorm:"type:text;comment:个人简介" json:"bio"`
 	OrgID uint          `gorm:"index;comment:所属组织ID" json:"org_id"`
 	Org   *Organization `gorm:"foreignKey:OrgID" json:"org,omitempty"`
+
+	LastLoginAt *time.Time `gorm:"comment:最后登录时间" json:"last_login_at"`
 }
 
 // Organization 组织实体
@@ -71,6 +73,7 @@ func (User) TableName() string {
 type UserRepository interface {
 	Create(user *User) error
 	Update(user *User) error
+	UpdateLastLoginAt(userID uint, loginTime time.Time) error
 	FindByUsername(username string) (*User, error)
 	FindByID(id uint) (*User, error)
 }
