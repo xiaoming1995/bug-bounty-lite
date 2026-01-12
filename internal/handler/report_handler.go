@@ -109,7 +109,9 @@ func (h *ReportHandler) ListHandler(c *gin.Context) {
 		userRole = roleVal.(string)
 	}
 
-	reports, total, err := h.Service.ListReports(page, pageSize, userID, userRole)
+	keyword := c.Query("keyword")
+
+	reports, total, err := h.Service.ListReports(page, pageSize, userID, userRole, keyword)
 	if err != nil {
 		response.Error(c, 500, "获取报告列表失败: "+err.Error())
 		return

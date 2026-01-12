@@ -69,7 +69,7 @@ func (s *reportService) GetReport(id uint) (*domain.Report, error) {
 // ListReports 获取报告列表
 // - 白帽子只能查看自己提交的报告
 // - 厂商和管理员可以查看所有报告
-func (s *reportService) ListReports(page, pageSize int, userID uint, userRole string) ([]domain.Report, int64, error) {
+func (s *reportService) ListReports(page, pageSize int, userID uint, userRole string, keyword string) ([]domain.Report, int64, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -85,7 +85,7 @@ func (s *reportService) ListReports(page, pageSize int, userID uint, userRole st
 	}
 	// 厂商和管理员可以查看所有报告，authorID 为 nil
 
-	return s.repo.List(page, pageSize, authorID)
+	return s.repo.List(page, pageSize, authorID, keyword)
 }
 
 // UpdateReport 更新报告
@@ -128,22 +128,24 @@ func (s *reportService) UpdateReport(id uint, userID uint, userRole string, inpu
 	if input.VulnerabilityImpact != "" {
 		report.VulnerabilityImpact = input.VulnerabilityImpact
 	}
-	if input.SelfAssessmentID != nil && *input.SelfAssessmentID != 0 {
-		// 验证危害自评ID
-		config, err := s.systemConfigRepo.FindByID(*input.SelfAssessmentID)
-		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return nil, errors.New("危害自评配置ID不存在")
+	if input.SelfAssessmentID != nil {
+		if *input.SelfAssessmentID != 0 {
+			// 验证危害自评ID
+			config, err := s.systemConfigRepo.FindByID(*input.SelfAssessmentID)
+			if err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					return nil, errors.New("危害自评配置ID不存在")
+				}
+				return nil, errors.New("验证危害自评配置时出错: " + err.Error())
 			}
-			return nil, errors.New("验证危害自评配置时出错: " + err.Error())
+			if config.ConfigType != "severity_level" {
+				return nil, errors.New("危害自评配置ID必须是危害等级类型")
+			}
+			report.SelfAssessmentID = input.SelfAssessmentID
+		} else {
+			// 如果明确传了 0，设置为 nil（表示数据库中的 NULL）
+			report.SelfAssessmentID = nil
 		}
-		if config.ConfigType != "severity_level" {
-			return nil, errors.New("危害自评配置ID必须是危害等级类型")
-		}
-		report.SelfAssessmentID = input.SelfAssessmentID
-	} else if input.SelfAssessmentID != nil {
-		// 如果明确传了 null 或 0，设置为 nil（表示 NULL）
-		report.SelfAssessmentID = nil
 	}
 	if input.VulnerabilityURL != "" {
 		report.VulnerabilityURL = input.VulnerabilityURL

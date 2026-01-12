@@ -80,7 +80,7 @@ func (r *reportRepo) FindByIDWithDeleted(id uint) (*domain.Report, error) {
 
 // List 分页获取报告列表
 // authorID 为 nil 时查询所有报告，否则只查询指定用户的报告
-func (r *reportRepo) List(page, pageSize int, authorID *uint) ([]domain.Report, int64, error) {
+func (r *reportRepo) List(page, pageSize int, authorID *uint, keyword string) ([]domain.Report, int64, error) {
 	var reports []domain.Report
 	var total int64
 
@@ -88,22 +88,20 @@ func (r *reportRepo) List(page, pageSize int, authorID *uint) ([]domain.Report, 
 	offset := (page - 1) * pageSize
 
 	// 2. 查询总数
-	countQuery := r.db.Model(&domain.Report{})
+	baseQuery := r.db.Model(&domain.Report{})
 	if authorID != nil && *authorID > 0 {
-		countQuery = countQuery.Where("author_id = ?", *authorID)
+		baseQuery = baseQuery.Where("author_id = ?", *authorID)
 	}
-	if err := countQuery.Count(&total).Error; err != nil {
+	if keyword != "" {
+		baseQuery = baseQuery.Where("vulnerability_name LIKE ?", "%"+keyword+"%")
+	}
+
+	if err := baseQuery.Session(&gorm.Session{}).Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
 	// 3. 查询当前页数据
-	dataQuery := r.db.Model(&domain.Report{})
-	if authorID != nil && *authorID > 0 {
-		dataQuery = dataQuery.Where("author_id = ?", *authorID)
-	}
-
-	// Order("id desc") 保证最新的漏洞显示在最前面
-	if err := dataQuery.Order("id desc").Offset(offset).Limit(pageSize).Find(&reports).Error; err != nil {
+	if err := baseQuery.Session(&gorm.Session{}).Order("id desc").Offset(offset).Limit(pageSize).Find(&reports).Error; err != nil {
 		return nil, 0, err
 	}
 

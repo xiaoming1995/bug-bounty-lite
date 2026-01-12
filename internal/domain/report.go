@@ -61,7 +61,7 @@ type ReportRepository interface {
 	Create(report *Report) error
 	FindByID(id uint) (*Report, error)
 	FindByIDWithDeleted(id uint) (*Report, error) // 包含已删除的报告
-	List(page, pageSize int, authorID *uint) ([]Report, int64, error)
+	List(page, pageSize int, authorID *uint, keyword string) ([]Report, int64, error)
 	Update(report *Report) error
 	Delete(id uint) error  // 软删除
 	Restore(id uint) error // 恢复已删除的报告
@@ -85,7 +85,7 @@ type ReportUpdateInput struct {
 type ReportService interface {
 	SubmitReport(report *Report) error
 	GetReport(id uint) (*Report, error)
-	ListReports(page, pageSize int, userID uint, userRole string) ([]Report, int64, error)
+	ListReports(page, pageSize int, userID uint, userRole string, keyword string) ([]Report, int64, error)
 	UpdateReport(id uint, userID uint, userRole string, input *ReportUpdateInput) (*Report, error)
 	DeleteReport(id uint, userID uint, userRole string) error  // 软删除
 	RestoreReport(id uint, userID uint, userRole string) error // 恢复已删除的报告
