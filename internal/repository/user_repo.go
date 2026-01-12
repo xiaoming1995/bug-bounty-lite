@@ -3,6 +3,7 @@ package repository
 import (
 	"bug-bounty-lite/internal/domain"
 	"errors"
+
 	"gorm.io/gorm"
 )
 
@@ -37,6 +38,11 @@ func (r *userRepo) FindByUsername(username string) (*domain.User, error) {
 // FindByID 根据ID查找
 func (r *userRepo) FindByID(id uint) (*domain.User, error) {
 	var user domain.User
-	err := r.db.First(&user, id).Error
+	err := r.db.Preload("Org").First(&user, id).Error
 	return &user, err
+}
+
+// Update 更新用户
+func (r *userRepo) Update(user *domain.User) error {
+	return r.db.Save(user).Error
 }

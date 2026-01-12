@@ -38,6 +38,13 @@ func (s *UserSeeder) Seed(force bool) error {
 		{"admin", "admin", "管理员"},
 	}
 
+	// 获取所有可用的组织 ID（用于绑定）
+	var orgIDs []uint
+	s.db.Model(&domain.Organization{}).Pluck("id", &orgIDs)
+	if len(orgIDs) == 0 {
+		fmt.Println("[WARN] No organizations found. Users will be created without organization binding.")
+	}
+
 	// 生成 5-10 个新用户（每次执行都生成新的）
 	numUsers := rand.Intn(6) + 5
 	fmt.Printf("[INFO] Generating %d new users...\n", numUsers)
@@ -56,6 +63,14 @@ func (s *UserSeeder) Seed(force bool) error {
 			return fmt.Errorf("failed to hash password: %w", err)
 		}
 
+		bios := []string{
+			"热爱安全研究，专注于 Web 漏洞挖掘。",
+			"资深渗透测试工程师，CTF 爱好者。",
+			"崇尚极简主义，代码拯救世界。",
+			"关注业务安全，保护用户隐私。",
+			"路漫漫其修远兮，吾将上下而求索。",
+		}
+
 		user := domain.User{
 			Username: username,
 			Password: string(hashedPassword),
@@ -63,6 +78,12 @@ func (s *UserSeeder) Seed(force bool) error {
 			Name:     fmt.Sprintf("%s%d", template.NamePrefix, i+1),
 			Email:    fmt.Sprintf("%s@example.com", username),
 			Phone:    fmt.Sprintf("138%08d", rand.Intn(100000000)),
+			Bio:      bios[rand.Intn(len(bios))],
+		}
+
+		// 随机分配一个组织 (如果存在组织数据)
+		if len(orgIDs) > 0 {
+			user.OrgID = orgIDs[rand.Intn(len(orgIDs))]
 		}
 
 		if err := s.db.Create(&user).Error; err != nil {

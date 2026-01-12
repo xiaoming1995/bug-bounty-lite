@@ -31,6 +31,8 @@ func (m *Migrator) Run() error {
 	// 注意：AutoMigrate 只会添加缺失的列、索引，不会删除或修改现有列
 	err := m.db.AutoMigrate(
 		&domain.User{},
+		&domain.Organization{},
+		&domain.UserUpdateLog{},
 		&domain.Report{},
 		&domain.UserInfoChangeRequest{},
 		&domain.Project{},
@@ -166,6 +168,8 @@ func (m *Migrator) addTableComments() {
 		"user_info_change_requests": "用户信息变更申请表 - 存储用户信息变更申请，需后台审核",
 		"projects":                  "项目表 - 存储平台项目资料信息",
 		"system_configs":            "系统配置表 - 存储各类系统配置信息（漏洞类型、危害等级等），支持通过config_type区分不同类型的配置",
+		"organizations":             "组织管理表 - 存储机构、部门等组织架构信息",
+		"user_update_logs":          "用户修改记录表 - 存储用户关键信息（如简介、组织绑定）的变更审计日志",
 	}
 
 	for table, comment := range tableComments {
@@ -261,6 +265,17 @@ func (m *Migrator) addColumnComments() {
 			table:   "reports",
 			column:  "attachment_url",
 			comment: "附件地址(文件上传后的URL，单个文件，后续可扩展为多个)",
+		},
+		// users 表新增字段
+		{
+			table:   "users",
+			column:  "bio",
+			comment: "个人简介(文本输入)",
+		},
+		{
+			table:   "users",
+			column:  "org_id",
+			comment: "所属组织ID(关联organizations表)",
 		},
 	}
 

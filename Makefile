@@ -1,4 +1,4 @@
-.PHONY: run run-migrate build test clean docker-build docker-run tidy lint migrate migrate-status init init-force seed-projects seed-projects-force seed-users seed-users-force seed-reports seed-reports-force seed-all help
+.PHONY: run run-migrate build test clean docker-build docker-run tidy lint migrate migrate-status init init-force seed-organizations seed-organizations-force seed-projects seed-projects-force seed-users seed-users-force seed-reports seed-reports-force seed-all help
 
 # 默认目标
 .DEFAULT_GOAL := help
@@ -70,9 +70,20 @@ seed-reports:
 seed-reports-force:
 	go run cmd/seed-reports/main.go -force
 
+## seed-organizations: 填充组织测试数据
+seed-organizations:
+	go run cmd/seed-organizations/main.go
+
+## seed-organizations-force: 强制填充组织测试数据（跳过已存在的数据）
+seed-organizations-force:
+	go run cmd/seed-organizations/main.go -force
+
 ## seed-all: 填充所有测试数据（项目、用户、报告）
 seed-all:
-	go run cmd/seed-all/main.go
+	go run cmd/seed-organizations/main.go
+	go run cmd/seed-projects/main.go
+	go run cmd/seed-users/main.go
+	go run cmd/seed-reports/main.go
 
 # ===========================
 # 测试命令

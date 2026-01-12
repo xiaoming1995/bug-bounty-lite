@@ -2,8 +2,9 @@ package handler
 
 import (
 	"bug-bounty-lite/internal/domain"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type UserHandler struct {
@@ -71,4 +72,50 @@ func (h *UserHandler) Login(c *gin.Context) {
 		"token":   token,
 		"user":    user, // 注意：User 里的 Password 字段有 `json:"-"`，所以不会返回
 	})
+}
+
+// UpdateProfileRequest 更新资料请求体
+type UpdateProfileRequest struct {
+	Bio   string `json:"bio"`
+	Phone string `json:"phone"`
+	Email string `json:"email"`
+}
+
+// UpdateProfile [POST] /api/v1/user/profile
+func (h *UserHandler) UpdateProfile(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	var req UpdateProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.Service.UpdateProfile(userID.(uint), req.Bio, req.Phone, req.Email); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Profile updated successfully"})
+}
+
+// BindOrgRequest 绑定组织请求体
+type BindOrgRequest struct {
+	OrgID uint `json:"org_id" binding:"required"`
+}
+
+// BindOrganization [POST] /api/v1/user/bind-org
+func (h *UserHandler) BindOrganization(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	var req BindOrgRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.Service.BindOrganization(userID.(uint), req.OrgID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Organization bound successfully"})
 }

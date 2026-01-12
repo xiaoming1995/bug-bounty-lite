@@ -57,5 +57,6 @@ func InitDB(cfg *config.Config) *gorm.DB {
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
 	log.Println("Database connected successfully")
+
 	return db
 }

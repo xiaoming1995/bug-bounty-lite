@@ -4,19 +4,29 @@ import (
 	"bug-bounty-lite/internal/domain"
 	"bug-bounty-lite/pkg/jwt"
 	"errors"
+	"fmt"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
 type userService struct {
 	repo       domain.UserRepository
+	orgRepo    domain.OrganizationRepository
+	logRepo    domain.UserUpdateLogRepository
 	jwtManager *jwt.JWTManager
 }
 
 // NewUserService 构造函数
-func NewUserService(repo domain.UserRepository, jwtManager *jwt.JWTManager) domain.UserService {
+func NewUserService(
+	repo domain.UserRepository,
+	orgRepo domain.OrganizationRepository,
+	logRepo domain.UserUpdateLogRepository,
+	jwtManager *jwt.JWTManager,
+) domain.UserService {
 	return &userService{
 		repo:       repo,
+		orgRepo:    orgRepo,
+		logRepo:    logRepo,
 		jwtManager: jwtManager,
 	}
 }
@@ -72,4 +82,74 @@ func (s *userService) Login(username, password string) (*domain.User, string, er
 // GetUser 获取用户信息
 func (s *userService) GetUser(id uint) (*domain.User, error) {
 	return s.repo.FindByID(id)
+}
+
+// UpdateProfile 更新个人简介及基本信息
+func (s *userService) UpdateProfile(userID uint, bio string, phone string, email string) error {
+	user, err := s.repo.FindByID(userID)
+	if err != nil {
+		return err
+	}
+
+	// 记录变更并更新字段
+	updates := map[string][2]string{
+		"bio":   {user.Bio, bio},
+		"phone": {user.Phone, phone},
+		"email": {user.Email, email},
+	}
+
+	for field, vals := range updates {
+		oldVal, newVal := vals[0], vals[1]
+		if newVal != "" && oldVal != newVal {
+			// 频率限制检测逻辑 (未来可根据 logRepo.GetLastUpdateAt 扩展)
+
+			// 记录日志
+			_ = s.logRepo.Create(&domain.UserUpdateLog{
+				UserID: userID,
+				Field:  field,
+				Before: oldVal,
+				After:  newVal,
+				Reason: "User self update",
+			})
+		}
+	}
+
+	// 应用更新
+	if bio != "" {
+		user.Bio = bio
+	}
+	if phone != "" {
+		user.Phone = phone
+	}
+	if email != "" {
+		user.Email = email
+	}
+
+	return s.repo.Update(user)
+}
+
+// BindOrganization 绑定/切换组织
+func (s *userService) BindOrganization(userID uint, orgID uint) error {
+	user, err := s.repo.FindByID(userID)
+	if err != nil {
+		return err
+	}
+
+	org, err := s.orgRepo.FindByID(orgID)
+	if err != nil || org == nil {
+		return errors.New("organization not found")
+	}
+
+	if user.OrgID != orgID {
+		_ = s.logRepo.Create(&domain.UserUpdateLog{
+			UserID: userID,
+			Field:  "org_id",
+			Before: fmt.Sprintf("%d", user.OrgID),
+			After:  fmt.Sprintf("%d", orgID),
+			Reason: "Organization binding change",
+		})
+		user.OrgID = orgID
+	}
+
+	return s.repo.Update(user)
 }

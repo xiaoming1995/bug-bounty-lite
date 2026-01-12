@@ -52,7 +52,13 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 
 	// User 模块
 	userRepo := repository.NewUserRepo(db)
-	userService := service.NewUserService(userRepo, jwtManager)
+	orgRepo := repository.NewOrganizationRepo(db)
+	userUpdateLogRepo := repository.NewUserUpdateLogRepo(db)
+
+	organizationService := service.NewOrganizationService(orgRepo)
+	organizationHandler := handler.NewOrganizationHandler(organizationService)
+
+	userService := service.NewUserService(userRepo, orgRepo, userUpdateLogRepo, jwtManager)
 	userHandler := handler.NewUserHandler(userService)
 
 	// SystemConfig 模块（需要在 Report 之前初始化，因为 Report 依赖它）
@@ -89,6 +95,24 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 		{
 			auth.POST("/register", userHandler.Register)
 			auth.POST("/login", userHandler.Login)
+		}
+
+		// 用户个人管理路由
+		user := api.Group("/user")
+		user.Use(middleware.AuthMiddleware(jwtManager))
+		{
+			user.POST("/profile", userHandler.UpdateProfile)
+			user.POST("/bind-org", userHandler.BindOrganization)
+		}
+
+		// 组织管理路由（限管理员可用逻辑待后续细化，目前先挂载）
+		orgs := api.Group("/organizations")
+		orgs.Use(middleware.AuthMiddleware(jwtManager))
+		{
+			orgs.POST("", organizationHandler.Create)
+			orgs.GET("", organizationHandler.List)
+			orgs.PUT("/:id", organizationHandler.Update)
+			orgs.DELETE("/:id", organizationHandler.Delete)
 		}
 
 		// 需要认证的路由 - Reports
