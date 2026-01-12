@@ -36,6 +36,11 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 	r.Use(middleware.CORSMiddleware())
 	r.Use(middleware.LoggerMiddleware())
 
+	// 注入高级请求日志系统 (根据配置)
+	if cfg.Server.EnableHttpLog {
+		r.Use(middleware.HttpLogger())
+	}
+
 	// ===========================
 	// 3. 初始化 JWT 管理器
 	// ===========================

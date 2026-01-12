@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
 	"github.com/spf13/viper"
 )
 
@@ -15,8 +16,9 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Port string `mapstructure:"port"`
-	Mode string `mapstructure:"mode"`
+	Port          string `mapstructure:"port"`
+	Mode          string `mapstructure:"mode"`
+	EnableHttpLog bool   `mapstructure:"enable_http_log"`
 }
 
 type DatabaseConfig struct {
@@ -39,10 +41,10 @@ func LoadConfig() *Config {
 	// 2. 设置查找路径 (按顺序查找)
 	// 支持 Windows 和 Unix 系统的路径
 	configPaths := []string{
-		"./config",                    // 从项目根目录运行
-		".",                           // 当前目录
-		filepath.Join("..", "..", "config"),  // 从 cmd/xxx/ 目录运行
-		filepath.Join("..", "config"),        // 从 cmd/ 目录运行
+		"./config",                          // 从项目根目录运行
+		".",                                 // 当前目录
+		filepath.Join("..", "..", "config"), // 从 cmd/xxx/ 目录运行
+		filepath.Join("..", "config"),       // 从 cmd/ 目录运行
 		filepath.Join("..", "..", "..", "config"), // 从更深层目录运行
 	}
 
