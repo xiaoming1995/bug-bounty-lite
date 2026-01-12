@@ -21,3 +21,5 @@ Thumbs.db
 
 # --- 4. 依赖目录 (如果你使用 Go Modules，通常不需要提交 vendor) ---
 vendor/
+# --- 5. 日志文件 ---
+logs/
