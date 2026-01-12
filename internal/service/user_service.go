@@ -91,7 +91,7 @@ func (s *userService) GetUser(id uint) (*domain.User, error) {
 }
 
 // UpdateProfile 更新个人简介及基本信息
-func (s *userService) UpdateProfile(userID uint, bio string, phone string, email string) error {
+func (s *userService) UpdateProfile(userID uint, name string, bio string, phone string, email string) error {
 	user, err := s.repo.FindByID(userID)
 	if err != nil {
 		return err
@@ -99,6 +99,7 @@ func (s *userService) UpdateProfile(userID uint, bio string, phone string, email
 
 	// 记录变更并更新字段
 	updates := map[string][2]string{
+		"name":  {user.Name, name},
 		"bio":   {user.Bio, bio},
 		"phone": {user.Phone, phone},
 		"email": {user.Email, email},
@@ -120,18 +121,8 @@ func (s *userService) UpdateProfile(userID uint, bio string, phone string, email
 		}
 	}
 
-	// 应用更新
-	if bio != "" {
-		user.Bio = bio
-	}
-	if phone != "" {
-		user.Phone = phone
-	}
-	if email != "" {
-		user.Email = email
-	}
-
-	return s.repo.Update(user)
+	// 应用更新（使用专用方法避免外键约束问题）
+	return s.repo.UpdateProfileFields(userID, name, bio, phone, email)
 }
 
 // BindOrganization 绑定/切换组织
@@ -157,5 +148,35 @@ func (s *userService) BindOrganization(userID uint, orgID uint) error {
 		user.OrgID = orgID
 	}
 
+	return s.repo.Update(user)
+}
+
+// ChangePassword 修改用户密码
+func (s *userService) ChangePassword(userID uint, oldPassword, newPassword string) error {
+	// 1. 获取用户
+	user, err := s.repo.FindByID(userID)
+	if err != nil || user == nil {
+		return errors.New("user not found")
+	}
+
+	// 2. 验证旧密码
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(oldPassword))
+	if err != nil {
+		return errors.New("当前密码不正确")
+	}
+
+	// 3. 验证新密码长度
+	if len(newPassword) < 6 {
+		return errors.New("新密码长度不能少于6位")
+	}
+
+	// 4. 加密新密码
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return errors.New("密码加密失败")
+	}
+
+	// 5. 更新密码
+	user.Password = string(hashedPassword)
 	return s.repo.Update(user)
 }

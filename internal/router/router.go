@@ -101,8 +101,10 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 		user := api.Group("/user")
 		user.Use(middleware.AuthMiddleware(jwtManager))
 		{
+			user.GET("/profile", userHandler.GetProfile)
 			user.POST("/profile", userHandler.UpdateProfile)
 			user.POST("/bind-org", userHandler.BindOrganization)
+			user.POST("/change-password", userHandler.ChangePassword)
 		}
 
 		// 组织管理路由（限管理员可用逻辑待后续细化，目前先挂载）

@@ -39,8 +39,20 @@ func (r *userRepo) FindByUsername(username string) (*domain.User, error) {
 // FindByID 根据ID查找
 func (r *userRepo) FindByID(id uint) (*domain.User, error) {
 	var user domain.User
-	err := r.db.Preload("Org").First(&user, id).Error
-	return &user, err
+	err := r.db.First(&user, id).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// 手动加载组织信息（代码逻辑关联，非外键）
+	if user.OrgID > 0 {
+		var org domain.Organization
+		if err := r.db.First(&org, user.OrgID).Error; err == nil {
+			user.Org = &org
+		}
+	}
+
+	return &user, nil
 }
 
 func (r *userRepo) Update(user *domain.User) error {
@@ -51,4 +63,25 @@ func (r *userRepo) Update(user *domain.User) error {
 // UpdateLastLoginAt 专门更新最后登录时间
 func (r *userRepo) UpdateLastLoginAt(userID uint, loginTime time.Time) error {
 	return r.db.Model(&domain.User{}).Where("id = ?", userID).Update("last_login_at", loginTime).Error
+}
+
+// UpdateProfileFields 仅更新个人资料字段（避免外键约束问题）
+func (r *userRepo) UpdateProfileFields(userID uint, name, bio, phone, email string) error {
+	updates := map[string]interface{}{}
+	if name != "" {
+		updates["name"] = name
+	}
+	if bio != "" {
+		updates["bio"] = bio
+	}
+	if phone != "" {
+		updates["phone"] = phone
+	}
+	if email != "" {
+		updates["email"] = email
+	}
+	if len(updates) == 0 {
+		return nil
+	}
+	return r.db.Model(&domain.User{}).Where("id = ?", userID).Updates(updates).Error
 }

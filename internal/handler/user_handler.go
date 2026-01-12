@@ -76,6 +76,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 
 // UpdateProfileRequest 更新资料请求体
 type UpdateProfileRequest struct {
+	Name  string `json:"name"`
 	Bio   string `json:"bio"`
 	Phone string `json:"phone"`
 	Email string `json:"email"`
@@ -90,12 +91,27 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	if err := h.Service.UpdateProfile(userID.(uint), req.Bio, req.Phone, req.Email); err != nil {
+	if err := h.Service.UpdateProfile(userID.(uint), req.Name, req.Bio, req.Phone, req.Email); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Profile updated successfully"})
+}
+
+// GetProfile [GET] /api/v1/user/profile - 获取当前用户信息
+func (h *UserHandler) GetProfile(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	user, err := h.Service.GetUser(userID.(uint))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"data": user,
+	})
 }
 
 // BindOrgRequest 绑定组织请求体
@@ -118,4 +134,27 @@ func (h *UserHandler) BindOrganization(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Organization bound successfully"})
+}
+
+// ChangePasswordRequest 修改密码请求体
+type ChangePasswordRequest struct {
+	OldPassword string `json:"oldPassword" binding:"required"`
+	NewPassword string `json:"newPassword" binding:"required,min=6"`
+}
+
+// ChangePassword [POST] /api/v1/user/change-password
+func (h *UserHandler) ChangePassword(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	var req ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.Service.ChangePassword(userID.(uint), req.OldPassword, req.NewPassword); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "密码修改成功"})
 }

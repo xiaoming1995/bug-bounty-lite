@@ -120,42 +120,47 @@ func (m *Migrator) ensureDeletedAtColumns() {
 	}
 }
 
-// dropForeignKeys 删除 reports 表的外键约束
+// dropForeignKeys 删除数据库外键约束（改用代码逻辑验证数据一致性）
 func (m *Migrator) dropForeignKeys() {
 	fmt.Println("[INFO] Checking and removing foreign key constraints...")
 
-	// 查询 reports 表的所有外键
-	type ForeignKey struct {
-		ConstraintName string `gorm:"column:CONSTRAINT_NAME"`
-	}
+	// 需要删除外键的表列表
+	tables := []string{"reports", "users"}
 
-	var foreignKeys []ForeignKey
-	query := `
-		SELECT CONSTRAINT_NAME 
-		FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
-		WHERE TABLE_SCHEMA = DATABASE() 
-		AND TABLE_NAME = 'reports' 
-		AND CONSTRAINT_TYPE = 'FOREIGN KEY'
-	`
+	for _, table := range tables {
+		// 查询该表的所有外键
+		type ForeignKey struct {
+			ConstraintName string `gorm:"column:CONSTRAINT_NAME"`
+		}
 
-	if err := m.db.Raw(query).Scan(&foreignKeys).Error; err != nil {
-		log.Printf("[WARN] Failed to query foreign keys: %v", err)
-		return
-	}
+		var foreignKeys []ForeignKey
+		query := fmt.Sprintf(`
+			SELECT CONSTRAINT_NAME 
+			FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
+			WHERE TABLE_SCHEMA = DATABASE() 
+			AND TABLE_NAME = '%s' 
+			AND CONSTRAINT_TYPE = 'FOREIGN KEY'
+		`, table)
 
-	if len(foreignKeys) == 0 {
-		fmt.Println("[INFO] No foreign keys found on reports table")
-		return
-	}
+		if err := m.db.Raw(query).Scan(&foreignKeys).Error; err != nil {
+			log.Printf("[WARN] Failed to query foreign keys for %s: %v", table, err)
+			continue
+		}
 
-	fmt.Printf("[INFO] Found %d foreign key(s) to remove\n", len(foreignKeys))
+		if len(foreignKeys) == 0 {
+			fmt.Printf("[INFO] No foreign keys found on %s table\n", table)
+			continue
+		}
 
-	for _, fk := range foreignKeys {
-		sql := fmt.Sprintf("ALTER TABLE `reports` DROP FOREIGN KEY `%s`", fk.ConstraintName)
-		if err := m.db.Exec(sql).Error; err != nil {
-			log.Printf("[WARN] Failed to drop foreign key %s: %v", fk.ConstraintName, err)
-		} else {
-			fmt.Printf("[OK] Dropped foreign key: %s\n", fk.ConstraintName)
+		fmt.Printf("[INFO] Found %d foreign key(s) on %s to remove\n", len(foreignKeys), table)
+
+		for _, fk := range foreignKeys {
+			sql := fmt.Sprintf("ALTER TABLE `%s` DROP FOREIGN KEY `%s`", table, fk.ConstraintName)
+			if err := m.db.Exec(sql).Error; err != nil {
+				log.Printf("[WARN] Failed to drop foreign key %s from %s: %v", fk.ConstraintName, table, err)
+			} else {
+				fmt.Printf("[OK] Dropped foreign key: %s from %s\n", fk.ConstraintName, table)
+			}
 		}
 	}
 }

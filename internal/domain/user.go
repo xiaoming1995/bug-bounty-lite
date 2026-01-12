@@ -10,8 +10,9 @@ type UserService interface {
 	Register(user *User) error
 	Login(username, password string) (*User, string, error)
 	GetUser(id uint) (*User, error)
-	UpdateProfile(userID uint, bio string, phone string, email string) error // 更新基本信息与简介
-	BindOrganization(userID uint, orgID uint) error                          // 绑定组织
+	UpdateProfile(userID uint, name string, bio string, phone string, email string) error // 更新基本信息与简介
+	ChangePassword(userID uint, oldPassword, newPassword string) error                    // 修改密码
+	BindOrganization(userID uint, orgID uint) error                                       // 绑定组织
 }
 
 // OrganizationService 组织业务接口
@@ -46,7 +47,7 @@ type User struct {
 	// --- 新增字段 ---
 	Bio   string        `gorm:"type:text;comment:个人简介" json:"bio"`
 	OrgID uint          `gorm:"index;comment:所属组织ID" json:"org_id"`
-	Org   *Organization `gorm:"foreignKey:OrgID" json:"org,omitempty"`
+	Org   *Organization `gorm:"-" json:"org,omitempty"` // 移除自动外键，改用代码逻辑手动加载
 
 	LastLoginAt *time.Time `gorm:"comment:最后登录时间" json:"last_login_at"`
 }
@@ -74,6 +75,7 @@ type UserRepository interface {
 	Create(user *User) error
 	Update(user *User) error
 	UpdateLastLoginAt(userID uint, loginTime time.Time) error
+	UpdateProfileFields(userID uint, name, bio, phone, email string) error
 	FindByUsername(username string) (*User, error)
 	FindByID(id uint) (*User, error)
 }
