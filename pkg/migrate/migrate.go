@@ -39,6 +39,7 @@ func (m *Migrator) Run() error {
 		&domain.SystemConfig{},
 		&domain.Avatar{},        // 平台头像库
 		&domain.ReportComment{}, // 漏洞报告评论
+		&domain.Article{},       // 技术文章
 	)
 
 	if err != nil {

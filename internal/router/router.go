@@ -94,6 +94,11 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 	commentService := service.NewCommentService(commentRepo, reportRepo)
 	commentHandler := handler.NewCommentHandler(commentService)
 
+	// Article 模块
+	articleRepo := repository.NewArticleRepo(db)
+	articleService := service.NewArticleService(articleRepo)
+	articleHandler := handler.NewArticleHandler(articleService)
+
 	// ===========================
 	// 5. 注册路由
 	// ===========================
@@ -164,6 +169,27 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 			projects.PUT("/:id", projectHandler.UpdateHandler)           // 更新项目（仅admin）
 			projects.DELETE("/:id", projectHandler.DeleteHandler)        // 软删除项目（仅admin）
 			projects.POST("/:id/restore", projectHandler.RestoreHandler) // 恢复已删除项目（仅admin）
+		}
+
+		// 需要认证的路由 - Articles
+		articles := api.Group("/articles")
+		articles.Use(middleware.AuthMiddleware(jwtManager))
+		{
+			articles.POST("", articleHandler.CreateArticle)       // 创建文章
+			articles.GET("", articleHandler.GetMyArticles)        // 获取我的文章列表
+			articles.GET("/:id", articleHandler.GetArticle)       // 获取文章详情
+			articles.PUT("/:id", articleHandler.UpdateArticle)    // 更新文章
+			articles.DELETE("/:id", articleHandler.DeleteArticle) // 删除文章
+		}
+
+		// 公开路由 - 已发布的文章（学习中心）
+		api.GET("/articles/public", articleHandler.GetPublishedArticles)
+
+		// 管理员路由 - 文章审核
+		admin := api.Group("/admin")
+		admin.Use(middleware.AuthMiddleware(jwtManager))
+		{
+			admin.PUT("/articles/:id/review", articleHandler.ReviewArticle) // 审核文章
 		}
 
 		// 需要认证的路由 - System Configs
