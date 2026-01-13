@@ -37,6 +37,7 @@ func (m *Migrator) Run() error {
 		&domain.UserInfoChangeRequest{},
 		&domain.Project{},
 		&domain.SystemConfig{},
+		&domain.Avatar{}, // 平台头像库
 	)
 
 	if err != nil {

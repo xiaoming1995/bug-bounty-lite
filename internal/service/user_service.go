@@ -180,3 +180,24 @@ func (s *userService) ChangePassword(userID uint, oldPassword, newPassword strin
 	user.Password = string(hashedPassword)
 	return s.repo.Update(user)
 }
+
+// UpdateAvatar 更新用户头像
+func (s *userService) UpdateAvatar(userID uint, avatarID uint) error {
+	// 记录变更日志
+	user, err := s.repo.FindByID(userID)
+	if err != nil {
+		return err
+	}
+
+	if user.AvatarID != avatarID {
+		_ = s.logRepo.Create(&domain.UserUpdateLog{
+			UserID: userID,
+			Field:  "avatar_id",
+			Before: fmt.Sprintf("%d", user.AvatarID),
+			After:  fmt.Sprintf("%d", avatarID),
+			Reason: "Avatar change",
+		})
+	}
+
+	return s.repo.UpdateAvatarID(userID, avatarID)
+}

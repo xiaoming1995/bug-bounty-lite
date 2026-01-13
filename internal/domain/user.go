@@ -13,6 +13,7 @@ type UserService interface {
 	UpdateProfile(userID uint, name string, bio string, phone string, email string) error // 更新基本信息与简介
 	ChangePassword(userID uint, oldPassword, newPassword string) error                    // 修改密码
 	BindOrganization(userID uint, orgID uint) error                                       // 绑定组织
+	UpdateAvatar(userID uint, avatarID uint) error                                        // 更新头像
 }
 
 // OrganizationService 组织业务接口
@@ -49,6 +50,10 @@ type User struct {
 	OrgID uint          `gorm:"index;comment:所属组织ID" json:"org_id"`
 	Org   *Organization `gorm:"-" json:"org,omitempty"` // 移除自动外键，改用代码逻辑手动加载
 
+	// 头像字段
+	AvatarID uint    `gorm:"index;comment:头像ID" json:"avatar_id"`
+	Avatar   *Avatar `gorm:"-" json:"avatar,omitempty"` // 手动加载头像信息
+
 	LastLoginAt *time.Time `gorm:"comment:最后登录时间" json:"last_login_at"`
 }
 
@@ -76,6 +81,7 @@ type UserRepository interface {
 	Update(user *User) error
 	UpdateLastLoginAt(userID uint, loginTime time.Time) error
 	UpdateProfileFields(userID uint, name, bio, phone, email string) error
+	UpdateAvatarID(userID uint, avatarID uint) error
 	FindByUsername(username string) (*User, error)
 	FindByID(id uint) (*User, error)
 }

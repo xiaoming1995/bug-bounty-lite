@@ -52,6 +52,14 @@ func (r *userRepo) FindByID(id uint) (*domain.User, error) {
 		}
 	}
 
+	// 手动加载头像信息
+	if user.AvatarID > 0 {
+		var avatar domain.Avatar
+		if err := r.db.First(&avatar, user.AvatarID).Error; err == nil {
+			user.Avatar = &avatar
+		}
+	}
+
 	return &user, nil
 }
 
@@ -84,4 +92,9 @@ func (r *userRepo) UpdateProfileFields(userID uint, name, bio, phone, email stri
 		return nil
 	}
 	return r.db.Model(&domain.User{}).Where("id = ?", userID).Updates(updates).Error
+}
+
+// UpdateAvatarID 更新用户头像
+func (r *userRepo) UpdateAvatarID(userID uint, avatarID uint) error {
+	return r.db.Model(&domain.User{}).Where("id = ?", userID).Update("avatar_id", avatarID).Error
 }

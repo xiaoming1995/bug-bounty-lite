@@ -158,3 +158,25 @@ func (h *UserHandler) ChangePassword(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "密码修改成功"})
 }
+
+// UpdateAvatarRequest 更新头像请求体
+type UpdateAvatarRequest struct {
+	AvatarID uint `json:"avatar_id" binding:"required"`
+}
+
+// UpdateAvatar [POST] /api/v1/user/avatar - 用户选择头像
+func (h *UserHandler) UpdateAvatar(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	var req UpdateAvatarRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.Service.UpdateAvatar(userID.(uint), req.AvatarID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "头像更新成功"})
+}

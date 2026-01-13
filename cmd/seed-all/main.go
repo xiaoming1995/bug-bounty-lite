@@ -46,7 +46,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	// 3. 填充报告数据
+	// 3. 填充头像数据
+	fmt.Println("\n>>> Seeding Avatars...")
+	avatarSeeder := seeder.NewAvatarSeeder(db)
+	if err := avatarSeeder.Seed(*forceFlag); err != nil {
+		fmt.Printf("[ERROR] Avatar seed failed: %v\n", err)
+		os.Exit(1)
+	}
+
+	// 4. 填充报告数据
 	fmt.Println("\n>>> Seeding Reports...")
 	reportSeeder := seeder.NewReportSeeder(db)
 	if err := reportSeeder.Seed(*forceFlag); err != nil {

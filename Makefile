@@ -1,4 +1,4 @@
-.PHONY: run run-migrate build test clean docker-build docker-run tidy lint migrate migrate-status init init-force seed-organizations seed-organizations-force seed-projects seed-projects-force seed-users seed-users-force seed-reports seed-reports-force seed-all help
+.PHONY: run run-migrate build test clean docker-build docker-run tidy lint migrate migrate-status init init-force seed-organizations seed-organizations-force seed-avatars seed-avatars-force seed-projects seed-projects-force seed-users seed-users-force seed-reports seed-reports-force seed-all help
 
 # 默认目标
 .DEFAULT_GOAL := help
@@ -78,11 +78,20 @@ seed-organizations:
 seed-organizations-force:
 	go run cmd/seed-organizations/main.go -force
 
-## seed-all: 填充所有测试数据（项目、用户、报告）
+## seed-avatars: 填充头像测试数据
+seed-avatars:
+	go run cmd/seed-avatars/main.go
+
+## seed-avatars-force: 强制填充头像测试数据（清空并重新填充）
+seed-avatars-force:
+	go run cmd/seed-avatars/main.go -force
+
+## seed-all: 填充所有测试数据（项目、用户、头像、报告）
 seed-all:
 	go run cmd/seed-organizations/main.go
 	go run cmd/seed-projects/main.go
 	go run cmd/seed-users/main.go
+	go run cmd/seed-avatars/main.go
 	go run cmd/seed-reports/main.go
 
 # ===========================
@@ -165,7 +174,9 @@ help:
 	@echo "  seed-users-force     Force seed users test data (skip existing)"
 	@echo "  seed-reports         Seed reports test data (requires seed-users)"
 	@echo "  seed-reports-force   Force seed reports test data (skip existing)"
-	@echo "  seed-all             Seed all test data (projects + users + reports)"
+	@echo "  seed-avatars         Seed avatar test data (platform avatar library)"
+	@echo "  seed-avatars-force   Force seed avatar test data (clear and reseed)"
+	@echo "  seed-all             Seed all test data (organizations + projects + users + avatars + reports)"
 	@echo ""
 	@echo "Testing:"
 	@echo "  test           Run tests"

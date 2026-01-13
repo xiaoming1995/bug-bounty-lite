@@ -84,6 +84,11 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 	// Upload 模块
 	uploadHandler := handler.NewUploadHandler()
 
+	// Avatar 模块
+	avatarRepo := repository.NewAvatarRepo(db)
+	avatarService := service.NewAvatarService(avatarRepo)
+	avatarHandler := handler.NewAvatarHandler(avatarService)
+
 	// ===========================
 	// 5. 注册路由
 	// ===========================
@@ -105,6 +110,7 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 			user.POST("/profile", userHandler.UpdateProfile)
 			user.POST("/bind-org", userHandler.BindOrganization)
 			user.POST("/change-password", userHandler.ChangePassword)
+			user.POST("/avatar", userHandler.UpdateAvatar) // 用户选择头像
 		}
 
 		// 组织管理路由（限管理员可用逻辑待后续细化，目前先挂载）
@@ -166,6 +172,17 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 		upload.Use(middleware.AuthMiddleware(jwtManager))
 		{
 			upload.POST("", uploadHandler.UploadFileHandler) // 上传文件
+		}
+
+		// 需要认证的路由 - Avatars
+		avatars := api.Group("/avatars")
+		avatars.Use(middleware.AuthMiddleware(jwtManager))
+		{
+			avatars.GET("/active", avatarHandler.ListActiveAvatarsHandler) // 获取启用的头像（用户选择用）
+			avatars.GET("", avatarHandler.ListAvatarsHandler)              // 获取所有头像（管理员）
+			avatars.POST("/upload", avatarHandler.UploadAvatarHandler)     // 上传头像（管理员）
+			avatars.PUT("/:id", avatarHandler.UpdateAvatarHandler)         // 更新头像信息（管理员）
+			avatars.DELETE("/:id", avatarHandler.DeleteAvatarHandler)      // 删除头像（管理员）
 		}
 	}
 

@@ -20,12 +20,12 @@ const (
 
 // AllowedMimeTypes 允许的 MIME 类型
 var AllowedMimeTypes = map[string]bool{
-	"application/pdf":                          true,
-	"image/jpeg":                               true,
-	"image/jpg":                                true,
-	"image/png":                                true,
-	"image/gif":                                true,
-	"application/msword":                       true,
+	"application/pdf":    true,
+	"image/jpeg":         true,
+	"image/jpg":          true,
+	"image/png":          true,
+	"image/gif":          true,
+	"application/msword": true,
 	"application/vnd.openxmlformats-officedocument.wordprocessingml.document": true,
 	"text/plain": true,
 }
@@ -69,11 +69,11 @@ func UploadFile(fileHeader *multipart.FileHeader, baseURL string) (*UploadResult
 	now := time.Now()
 	year := now.Format("2006")
 	month := now.Format("01")
-	
+
 	// 生成唯一文件名
 	ext := filepath.Ext(fileHeader.Filename)
 	filename := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
-	
+
 	// 创建目录
 	dir := filepath.Join(UploadDir, year, month)
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -95,7 +95,7 @@ func UploadFile(fileHeader *multipart.FileHeader, baseURL string) (*UploadResult
 	}
 
 	// 6. 生成访问 URL
-	url := fmt.Sprintf("%s/%s/%s/%s", strings.TrimSuffix(baseURL, "/"), UploadDir, year, month, filename)
+	url := fmt.Sprintf("%s/%s/%s/%s/%s", strings.TrimSuffix(baseURL, "/"), UploadDir, year, month, filename)
 
 	return &UploadResult{
 		URL:      url,
@@ -105,3 +105,74 @@ func UploadFile(fileHeader *multipart.FileHeader, baseURL string) (*UploadResult
 	}, nil
 }
 
+// AvatarMimeTypes 头像允许的 MIME 类型
+var AvatarMimeTypes = map[string]bool{
+	"image/jpeg": true,
+	"image/jpg":  true,
+	"image/png":  true,
+	"image/gif":  true,
+	"image/webp": true,
+}
+
+// UploadFileToDir 上传文件到指定子目录（用于头像等特殊上传）
+func UploadFileToDir(fileHeader *multipart.FileHeader, baseURL string, subDir string) (*UploadResult, error) {
+	// 1. 验证文件大小（头像限制为 2MB）
+	maxSize := int64(2 * 1024 * 1024)
+	if fileHeader.Size > maxSize {
+		return nil, fmt.Errorf("文件大小超过限制（最大2MB）")
+	}
+
+	// 2. 打开文件
+	file, err := fileHeader.Open()
+	if err != nil {
+		return nil, fmt.Errorf("打开文件失败: %v", err)
+	}
+	defer file.Close()
+
+	// 3. 验证 MIME 类型（头像只允许图片）
+	buffer := make([]byte, 512)
+	_, err = file.Read(buffer)
+	if err != nil && err != io.EOF {
+		return nil, fmt.Errorf("读取文件失败: %v", err)
+	}
+	file.Seek(0, 0) // 重置文件指针
+
+	mimeType := http.DetectContentType(buffer)
+	if !AvatarMimeTypes[mimeType] {
+		return nil, fmt.Errorf("不支持的文件类型，只支持 jpg/png/gif/webp 格式")
+	}
+
+	// 4. 生成文件名和路径
+	ext := filepath.Ext(fileHeader.Filename)
+	filename := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
+
+	// 创建目录
+	dir := filepath.Join("uploads", subDir)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return nil, fmt.Errorf("创建目录失败: %v", err)
+	}
+
+	// 完整路径
+	fullPath := filepath.Join(dir, filename)
+
+	// 5. 保存文件
+	dst, err := os.Create(fullPath)
+	if err != nil {
+		return nil, fmt.Errorf("创建文件失败: %v", err)
+	}
+	defer dst.Close()
+
+	if _, err := io.Copy(dst, file); err != nil {
+		return nil, fmt.Errorf("保存文件失败: %v", err)
+	}
+
+	// 6. 生成访问 URL
+	url := fmt.Sprintf("%s/uploads/%s/%s", strings.TrimSuffix(baseURL, "/"), subDir, filename)
+
+	return &UploadResult{
+		URL:      url,
+		Filename: fileHeader.Filename,
+		Size:     fileHeader.Size,
+		MimeType: mimeType,
+	}, nil
+}
