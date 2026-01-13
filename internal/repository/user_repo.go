@@ -33,6 +33,23 @@ func (r *userRepo) FindByUsername(username string) (*domain.User, error) {
 		}
 		return nil, err
 	}
+
+	// 手动加载组织信息（代码逻辑关联，非外键）
+	if user.OrgID > 0 {
+		var org domain.Organization
+		if err := r.db.First(&org, user.OrgID).Error; err == nil {
+			user.Org = &org
+		}
+	}
+
+	// 手动加载头像信息
+	if user.AvatarID > 0 {
+		var avatar domain.Avatar
+		if err := r.db.First(&avatar, user.AvatarID).Error; err == nil {
+			user.Avatar = &avatar
+		}
+	}
+
 	return &user, nil
 }
 
