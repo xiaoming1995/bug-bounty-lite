@@ -28,7 +28,7 @@ type Report struct {
 	VulnerabilityImpact string `gorm:"type:text;comment:漏洞的危害(文本输入，描述漏洞可能造成的危害)" json:"vulnerability_impact"`
 
 	// 危害自评（关联危害等级配置）- 不使用数据库外键
-	SelfAssessmentID *uint        `gorm:"column:self_assessment_id;index;comment:危害自评配置ID" json:"self_assessment_id"`
+	SelfAssessmentID *uint        `gorm:"column:self_assessment_id;index;comment:危害自评ID(关联config表)" json:"self_assessment_id"`
 	SelfAssessment   SystemConfig `gorm:"-" json:"self_assessment,omitempty"` // 不创建外键，手动加载
 
 	// 漏洞链接
@@ -41,10 +41,10 @@ type Report struct {
 	AttachmentURL string `gorm:"size:500;comment:附件地址(文件上传后的URL，单个文件，后续可扩展为多个)" json:"attachment_url"`
 
 	// 危害等级: Low, Medium, High, Critical
-	Severity string `gorm:"size:20;default:'Low';comment:危害等级(Low/Medium/High/Critical)" json:"severity"`
+	Severity string `gorm:"size:20;comment:危害等级(Critical:严重, High:高危, Medium:中危, Low:低危, None:无危害)" json:"severity"`
 
-	// 状态机: Pending(待审) -> Triaged(已确) -> Resolved(已修) -> Closed(关闭)
-	Status string `gorm:"size:20;default:'Pending';index;comment:报告状态(Pending/Triaged/Resolved/Closed)" json:"status"`
+	// 状态机: Pending(待审核) -> Audited(已审核) / Rejected(驳回)
+	Status string `gorm:"size:20;default:'Pending';index;comment:报告状态(Pending:待审核[默认], Audited:已审核, Rejected:驳回)" json:"status"`
 
 	// 提交者ID - 不使用数据库外键
 	AuthorID uint `gorm:"index;comment:提交者ID" json:"author_id"`
