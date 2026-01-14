@@ -22,8 +22,14 @@ type Project struct {
 	// 备注（平台内部使用）
 	Note string `gorm:"type:text;comment:备注" json:"note"`
 
-	// 项目状态: active(活跃), inactive(非活跃)
-	Status string `gorm:"size:20;default:'active';index;comment:项目状态(active/inactive)" json:"status"`
+	// 项目难度: easy(简单), medium(中等), hard(困难), expert(专家)
+	Difficulty string `gorm:"size:20;default:'medium';comment:项目难度(easy/medium/hard/expert)" json:"difficulty"`
+
+	// 截止日期
+	Deadline *time.Time `gorm:"comment:项目截止日期" json:"deadline"`
+
+	// 项目状态: recruiting(招募中), in_progress(进行中), completed(已完成), closed(已关闭)
+	Status string `gorm:"size:20;default:'recruiting';index;comment:项目状态(recruiting/in_progress/completed/closed)" json:"status"`
 }
 
 // TableName 指定表名

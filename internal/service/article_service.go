@@ -6,16 +6,18 @@ import (
 )
 
 type articleService struct {
-	repo domain.ArticleRepository
+	repo     domain.ArticleRepository
+	viewRepo domain.ArticleViewRepository
 }
 
 // NewArticleService 创建文章服务实例
-func NewArticleService(repo domain.ArticleRepository) domain.ArticleService {
-	return &articleService{repo: repo}
+func NewArticleService(repo domain.ArticleRepository, viewRepo domain.ArticleViewRepository) domain.ArticleService {
+	return &articleService{repo: repo, viewRepo: viewRepo}
 }
 
 // CreateArticle 创建文章
-func (s *articleService) CreateArticle(authorID uint, title, description, content string) (*domain.Article, error) {
+// 管理员发布的文章直接通过审核
+func (s *articleService) CreateArticle(authorID uint, userRole, title, description, content, category string) (*domain.Article, error) {
 	if title == "" {
 		return nil, errors.New("文章标题不能为空")
 	}
@@ -23,12 +25,18 @@ func (s *articleService) CreateArticle(authorID uint, title, description, conten
 		return nil, errors.New("文章内容不能为空")
 	}
 
+	status := "pending" // 默认待审核
+	if userRole == "admin" {
+		status = "approved" // 管理员发布直接通过
+	}
+
 	article := &domain.Article{
 		AuthorID:    authorID,
 		Title:       title,
 		Description: description,
 		Content:     content,
-		Status:      "pending", // 默认待审核
+		Category:    category,
+		Status:      status,
 	}
 
 	if err := s.repo.Create(article); err != nil {
@@ -39,7 +47,7 @@ func (s *articleService) CreateArticle(authorID uint, title, description, conten
 }
 
 // UpdateArticle 更新文章
-func (s *articleService) UpdateArticle(articleID, userID uint, title, description, content string) (*domain.Article, error) {
+func (s *articleService) UpdateArticle(articleID, userID uint, title, description, content, category string) (*domain.Article, error) {
 	article, err := s.repo.FindByID(articleID)
 	if err != nil {
 		return nil, errors.New("文章不存在")
@@ -59,6 +67,7 @@ func (s *articleService) UpdateArticle(articleID, userID uint, title, descriptio
 	article.Title = title
 	article.Description = description
 	article.Content = content
+	article.Category = category
 	article.Status = "pending" // 重新提交后变为待审核
 
 	if err := s.repo.Update(article); err != nil {
@@ -89,16 +98,23 @@ func (s *articleService) DeleteArticle(articleID, userID uint, userRole string) 
 }
 
 // GetArticle 获取文章详情
-func (s *articleService) GetArticle(id uint, incrementView bool) (*domain.Article, error) {
+// 使用 IP 限制浏览量统计：同一 IP 一天内只计 1 次
+func (s *articleService) GetArticle(id uint, incrementView bool, clientIP string) (*domain.Article, error) {
 	article, err := s.repo.FindByID(id)
 	if err != nil {
 		return nil, errors.New("文章不存在")
 	}
 
-	// 增加浏览量
-	if incrementView && article.Status == "approved" {
-		_ = s.repo.IncrementViews(id)
-		article.Views++
+	// 增加浏览量（带 IP 限制）
+	if incrementView && article.Status == "approved" && clientIP != "" {
+		// 检查今日是否已访问
+		hasViewed, err := s.viewRepo.HasViewedToday(id, clientIP)
+		if err == nil && !hasViewed {
+			// 记录访问并增加浏览量
+			_ = s.viewRepo.RecordView(id, clientIP)
+			_ = s.repo.IncrementViews(id)
+			article.Views++
+		}
 	}
 
 	return article, nil
@@ -112,6 +128,25 @@ func (s *articleService) GetMyArticles(authorID uint) ([]domain.Article, error) 
 // GetPublishedArticles 获取已发布的文章列表（学习中心）
 func (s *articleService) GetPublishedArticles() ([]domain.Article, error) {
 	return s.repo.FindPublished()
+}
+
+// GetFeaturedArticles 获取精选文章
+func (s *articleService) GetFeaturedArticles(limit int) ([]domain.Article, error) {
+	return s.repo.FindFeatured(limit)
+}
+
+// GetHotArticles 获取热门文章
+func (s *articleService) GetHotArticles(limit int) ([]domain.Article, error) {
+	return s.repo.FindHot(limit)
+}
+
+// SetFeatured 设置精选状态
+func (s *articleService) SetFeatured(articleID uint, featured bool) error {
+	_, err := s.repo.FindByID(articleID)
+	if err != nil {
+		return errors.New("文章不存在")
+	}
+	return s.repo.SetFeatured(articleID, featured)
 }
 
 // ReviewArticle 审核文章（管理员）

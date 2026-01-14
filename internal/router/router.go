@@ -96,8 +96,22 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 
 	// Article 模块
 	articleRepo := repository.NewArticleRepo(db)
-	articleService := service.NewArticleService(articleRepo)
+	articleViewRepo := repository.NewArticleViewRepo(db)
+	articleService := service.NewArticleService(articleRepo, articleViewRepo)
 	articleHandler := handler.NewArticleHandler(articleService)
+
+	// 文章点赞评论模块
+	articleLikeRepo := repository.NewArticleLikeRepository(db)
+	articleCommentRepo := repository.NewArticleCommentRepository(db)
+	articleLikeCommentService := service.NewArticleLikeCommentService(articleLikeRepo, articleCommentRepo, articleRepo)
+	articleLikeCommentHandler := handler.NewArticleLikeCommentHandler(articleLikeCommentService)
+
+	// ProjectTask 模块（项目任务/接受任务）
+	projectAssignmentRepo := repository.NewProjectAssignmentRepository(db)
+	projectTaskRepo := repository.NewProjectTaskRepository(db)
+	projectAttachmentRepo := repository.NewProjectAttachmentRepository(db)
+	projectTaskService := service.NewProjectTaskService(projectTaskRepo, projectAssignmentRepo, projectRepo)
+	projectTaskHandler := handler.NewProjectTaskHandler(projectTaskService, projectTaskRepo, projectAssignmentRepo, projectRepo, projectAttachmentRepo)
 
 	// ===========================
 	// 5. 注册路由
@@ -163,12 +177,16 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 		projects := api.Group("/projects")
 		projects.Use(middleware.AuthMiddleware(jwtManager))
 		{
-			projects.POST("", projectHandler.CreateHandler)              // 创建项目（仅admin）
-			projects.GET("", projectHandler.ListHandler)                 // 获取项目列表
-			projects.GET("/:id", projectHandler.GetHandler)              // 获取项目详情
-			projects.PUT("/:id", projectHandler.UpdateHandler)           // 更新项目（仅admin）
-			projects.DELETE("/:id", projectHandler.DeleteHandler)        // 软删除项目（仅admin）
-			projects.POST("/:id/restore", projectHandler.RestoreHandler) // 恢复已删除项目（仅admin）
+			projects.POST("", projectHandler.CreateHandler)                      // 创建项目（仅admin）
+			projects.GET("", projectHandler.ListHandler)                         // 获取项目列表
+			projects.GET("/available", projectTaskHandler.ListAvailableProjects) // 获取用户可见的项目列表
+			projects.GET("/accepted", projectTaskHandler.ListAcceptedProjects)   // 获取用户已接受的项目列表
+			projects.GET("/:id", projectHandler.GetHandler)                      // 获取项目详情
+			projects.GET("/available/:id", projectTaskHandler.GetProjectDetail)  // 获取项目详情（可见性检查）
+			projects.POST("/:id/accept", projectTaskHandler.AcceptTask)          // 接受项目任务
+			projects.PUT("/:id", projectHandler.UpdateHandler)                   // 更新项目（仅admin）
+			projects.DELETE("/:id", projectHandler.DeleteHandler)                // 软删除项目（仅admin）
+			projects.POST("/:id/restore", projectHandler.RestoreHandler)         // 恢复已删除项目（仅admin）
 		}
 
 		// 需要认证的路由 - Articles
@@ -184,12 +202,26 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 
 		// 公开路由 - 已发布的文章（学习中心）
 		api.GET("/articles/public", articleHandler.GetPublishedArticles)
+		api.GET("/articles/public/featured", articleHandler.GetFeaturedArticles) // 精选文章
+		api.GET("/articles/public/hot", articleHandler.GetHotArticles)           // 热门文章
 
-		// 管理员路由 - 文章审核
+		// 管理员路由 - 文章管理
 		admin := api.Group("/admin")
 		admin.Use(middleware.AuthMiddleware(jwtManager))
 		{
 			admin.PUT("/articles/:id/review", articleHandler.ReviewArticle) // 审核文章
+			admin.PUT("/articles/:id/featured", articleHandler.SetFeatured) // 设置精选
+		}
+
+		// 文章点赞评论路由
+		api.GET("/articles/:id/like", middleware.OptionalAuthMiddleware(jwtManager), articleLikeCommentHandler.GetLikeStatus) // 获取点赞状态
+		api.GET("/articles/:id/comments", articleLikeCommentHandler.GetComments)                                              // 获取评论列表
+		articlesAuth := api.Group("/articles")
+		articlesAuth.Use(middleware.AuthMiddleware(jwtManager))
+		{
+			articlesAuth.POST("/:id/like", articleLikeCommentHandler.ToggleLike)                     // 切换点赞
+			articlesAuth.POST("/:id/comments", articleLikeCommentHandler.AddComment)                 // 发表评论
+			articlesAuth.DELETE("/:id/comments/:commentId", articleLikeCommentHandler.DeleteComment) // 删除评论
 		}
 
 		// 需要认证的路由 - System Configs

@@ -37,9 +37,15 @@ func (m *Migrator) Run() error {
 		&domain.UserInfoChangeRequest{},
 		&domain.Project{},
 		&domain.SystemConfig{},
-		&domain.Avatar{},        // 平台头像库
-		&domain.ReportComment{}, // 漏洞报告评论
-		&domain.Article{},       // 技术文章
+		&domain.Avatar{},            // 平台头像库
+		&domain.ReportComment{},     // 漏洞报告评论
+		&domain.Article{},           // 技术文章
+		&domain.ArticleView{},       // 文章访问记录（IP限制）
+		&domain.ArticleLike{},       // 文章点赞记录
+		&domain.ArticleComment{},    // 文章评论
+		&domain.ProjectAssignment{}, // 项目指派记录
+		&domain.ProjectTask{},       // 项目任务记录
+		&domain.ProjectAttachment{}, // 项目附件
 	)
 
 	if err != nil {

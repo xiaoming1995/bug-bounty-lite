@@ -94,3 +94,63 @@ func (r *articleRepo) FindPublished() ([]domain.Article, error) {
 func (r *articleRepo) IncrementViews(id uint) error {
 	return r.db.Model(&domain.Article{}).Where("id = ?", id).UpdateColumn("views", gorm.Expr("views + ?", 1)).Error
 }
+
+// FindFeatured 获取精选文章
+func (r *articleRepo) FindFeatured(limit int) ([]domain.Article, error) {
+	var articles []domain.Article
+	query := r.db.Where("status = ? AND is_featured = ?", "approved", true).Order("created_at DESC")
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+	if err := query.Find(&articles).Error; err != nil {
+		return nil, err
+	}
+
+	// 手动加载作者信息
+	r.loadAuthors(articles)
+	return articles, nil
+}
+
+// FindHot 获取热门文章（按浏览量排序）
+func (r *articleRepo) FindHot(limit int) ([]domain.Article, error) {
+	var articles []domain.Article
+	query := r.db.Where("status = ?", "approved").Order("views DESC")
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+	if err := query.Find(&articles).Error; err != nil {
+		return nil, err
+	}
+
+	// 手动加载作者信息
+	r.loadAuthors(articles)
+	return articles, nil
+}
+
+// SetFeatured 设置精选状态
+func (r *articleRepo) SetFeatured(id uint, featured bool) error {
+	return r.db.Model(&domain.Article{}).Where("id = ?", id).Update("is_featured", featured).Error
+}
+
+// loadAuthors 加载文章作者信息（辅助方法）
+func (r *articleRepo) loadAuthors(articles []domain.Article) {
+	for i := range articles {
+		if articles[i].AuthorID > 0 {
+			var user domain.User
+			if err := r.db.First(&user, articles[i].AuthorID).Error; err == nil {
+				if user.AvatarID > 0 {
+					var avatar domain.Avatar
+					if err := r.db.First(&avatar, user.AvatarID).Error; err == nil {
+						user.Avatar = &avatar
+					}
+				}
+				articles[i].Author = &user
+			}
+		}
+	}
+}
+
+// UpdateLikes 更新点赞数
+func (r *articleRepo) UpdateLikes(id uint, likes int) error {
+	return r.db.Model(&domain.Article{}).Where("id = ?", id).Update("likes", likes).Error
+}

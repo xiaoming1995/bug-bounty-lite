@@ -27,6 +27,12 @@ type Article struct {
 	// 驳回原因
 	RejectReason string `gorm:"size:500;comment:驳回原因" json:"reject_reason,omitempty"`
 
+	// 分类
+	Category string `gorm:"size:50;index;comment:文章分类" json:"category"`
+
+	// 是否精选
+	IsFeatured bool `gorm:"default:false;index;comment:是否精选" json:"is_featured"`
+
 	// 统计数据
 	Views int `gorm:"default:0;comment:浏览量" json:"views"`
 	Likes int `gorm:"default:0;comment:点赞量" json:"likes"`
@@ -44,16 +50,23 @@ type ArticleRepository interface {
 	FindByID(id uint) (*Article, error)
 	FindByAuthorID(authorID uint) ([]Article, error)
 	FindPublished() ([]Article, error)
+	FindFeatured(limit int) ([]Article, error)
+	FindHot(limit int) ([]Article, error)
+	SetFeatured(id uint, featured bool) error
 	IncrementViews(id uint) error
+	UpdateLikes(id uint, likes int) error // 更新点赞数
 }
 
 // ArticleService 文章服务接口
 type ArticleService interface {
-	CreateArticle(authorID uint, title, description, content string) (*Article, error)
-	UpdateArticle(articleID, userID uint, title, description, content string) (*Article, error)
+	CreateArticle(authorID uint, userRole, title, description, content, category string) (*Article, error)
+	UpdateArticle(articleID, userID uint, title, description, content, category string) (*Article, error)
 	DeleteArticle(articleID, userID uint, userRole string) error
-	GetArticle(id uint, incrementView bool) (*Article, error)
+	GetArticle(id uint, incrementView bool, clientIP string) (*Article, error)
 	GetMyArticles(authorID uint) ([]Article, error)
 	GetPublishedArticles() ([]Article, error)
+	GetFeaturedArticles(limit int) ([]Article, error)
+	GetHotArticles(limit int) ([]Article, error)
+	SetFeatured(articleID uint, featured bool) error
 	ReviewArticle(articleID uint, approved bool, rejectReason string) (*Article, error)
 }

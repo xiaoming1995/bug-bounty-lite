@@ -1,4 +1,4 @@
-.PHONY: run run-migrate build test clean docker-build docker-run tidy lint migrate migrate-status init init-force seed-organizations seed-organizations-force seed-avatars seed-avatars-force seed-projects seed-projects-force seed-users seed-users-force seed-reports seed-reports-force seed-all help
+.PHONY: run run-migrate build test clean docker-build docker-run tidy lint migrate migrate-status init init-force seed-organizations seed-organizations-force seed-avatars seed-avatars-force seed-projects seed-projects-force seed-users seed-users-force seed-reports seed-reports-force seed-all seed-project-data seed-articles review-list review-approve review-reject review-interactive help
 
 # 默认目标
 .DEFAULT_GOAL := help
@@ -93,6 +93,103 @@ seed-all:
 	go run cmd/seed-users/main.go
 	go run cmd/seed-avatars/main.go
 	go run cmd/seed-reports/main.go
+
+## seed-project-data: 生成项目测试数据并指派给指定用户
+## 用法: make seed-project-data USER=1  (通过用户ID)
+##       make seed-project-data USERNAME=admin  (通过用户名)
+##       make seed-project-data USER=1 CLEAN=1  (清理数据)
+seed-project-data:
+	@if [ -n "$(USER)" ]; then \
+		if [ -n "$(CLEAN)" ]; then \
+			go run cmd/seed-project-data/main.go -user $(USER) -clean; \
+		else \
+			go run cmd/seed-project-data/main.go -user $(USER); \
+		fi \
+	elif [ -n "$(USERNAME)" ]; then \
+		if [ -n "$(CLEAN)" ]; then \
+			go run cmd/seed-project-data/main.go -username $(USERNAME) -clean; \
+		else \
+			go run cmd/seed-project-data/main.go -username $(USERNAME); \
+		fi \
+	else \
+		echo "请指定用户: make seed-project-data USER=<用户ID> 或 USERNAME=<用户名>"; \
+		echo "清理数据: make seed-project-data USER=<用户ID> CLEAN=1"; \
+		exit 1; \
+	fi
+
+# ===========================
+# 学习中心文章数据
+# ===========================
+
+## seed-articles: 生成测试文章数据
+##       make seed-articles
+##       make seed-articles CLEAN=1  (清理后重新生成)
+##       make seed-articles COUNT=5  (生成指定数量)
+seed-articles:
+	@if [ -n "$(CLEAN)" ]; then \
+		go run cmd/seed-articles/main.go -clean; \
+	elif [ -n "$(COUNT)" ]; then \
+		go run cmd/seed-articles/main.go -count $(COUNT); \
+	else \
+		go run cmd/seed-articles/main.go; \
+	fi
+
+# ===========================
+# 文章审核命令
+# ===========================
+
+## review-list: 查看所有待审核的文章
+review-list:
+	go run cmd/review-articles/main.go -list
+
+## review-approve: 审核通过文章
+## 用法: make review-approve ID=5
+review-approve:
+	@if [ -z "$(ID)" ]; then \
+		echo "请指定文章ID: make review-approve ID=<文章ID>"; \
+		exit 1; \
+	fi
+	go run cmd/review-articles/main.go -approve $(ID)
+
+## review-reject: 驳回文章
+## 用法: make review-reject ID=5 REASON="内容不符合规范"
+review-reject:
+	@if [ -z "$(ID)" ]; then \
+		echo "请指定文章ID: make review-reject ID=<文章ID> REASON=\"驳回原因\""; \
+		exit 1; \
+	fi
+	@if [ -z "$(REASON)" ]; then \
+		echo "请指定驳回原因: make review-reject ID=<文章ID> REASON=\"驳回原因\""; \
+		exit 1; \
+	fi
+	go run cmd/review-articles/main.go -reject $(ID) -reason "$(REASON)"
+
+## review-interactive: 交互式审核模式
+review-interactive:
+	go run cmd/review-articles/main.go -i
+
+## review-published: 查看所有已发布的文章
+review-published:
+	go run cmd/review-articles/main.go -published
+
+## review-featured: 设为精选
+## 用法: make review-featured ID=5
+review-featured:
+	@if [ -z "$(ID)" ]; then \
+		echo "请指定文章ID: make review-featured ID=<文章ID>"; \
+		exit 1; \
+	fi
+	go run cmd/review-articles/main.go -featured $(ID)
+
+## review-unfeatured: 取消精选
+## 用法: make review-unfeatured ID=5
+review-unfeatured:
+	@if [ -z "$(ID)" ]; then \
+		echo "请指定文章ID: make review-unfeatured ID=<文章ID>"; \
+		exit 1; \
+	fi
+	go run cmd/review-articles/main.go -unfeatured $(ID)
+
 
 # ===========================
 # 测试命令

@@ -23,6 +23,7 @@ type CreateArticleRequest struct {
 	Title       string `json:"title" binding:"required"`
 	Description string `json:"description"`
 	Content     string `json:"content" binding:"required"`
+	Category    string `json:"category"`
 }
 
 // UpdateArticleRequest 更新文章请求
@@ -30,12 +31,18 @@ type UpdateArticleRequest struct {
 	Title       string `json:"title" binding:"required"`
 	Description string `json:"description"`
 	Content     string `json:"content" binding:"required"`
+	Category    string `json:"category"`
 }
 
 // ReviewRequest 审核请求
 type ReviewRequest struct {
 	Approved     bool   `json:"approved"`
 	RejectReason string `json:"reject_reason"`
+}
+
+// SetFeaturedRequest 设置精选请求
+type SetFeaturedRequest struct {
+	Featured bool `json:"featured"`
 }
 
 // CreateArticle 创建文章
@@ -47,20 +54,31 @@ func (h *ArticleHandler) CreateArticle(c *gin.Context) {
 		return
 	}
 
+	userRole, _ := c.Get("userRole")
+	roleStr := ""
+	if userRole != nil {
+		roleStr = userRole.(string)
+	}
+
 	var req CreateArticleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "请求参数无效"})
 		return
 	}
 
-	article, err := h.service.CreateArticle(userID.(uint), req.Title, req.Description, req.Content)
+	article, err := h.service.CreateArticle(userID.(uint), roleStr, req.Title, req.Description, req.Content, req.Category)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
+	message := "文章创建成功，等待审核"
+	if roleStr == "admin" {
+		message = "文章发布成功"
+	}
+
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "文章创建成功，等待审核",
+		"message": message,
 		"data":    article,
 	})
 }
@@ -86,7 +104,7 @@ func (h *ArticleHandler) UpdateArticle(c *gin.Context) {
 		return
 	}
 
-	article, err := h.service.UpdateArticle(uint(articleID), userID.(uint), req.Title, req.Description, req.Content)
+	article, err := h.service.UpdateArticle(uint(articleID), userID.(uint), req.Title, req.Description, req.Content, req.Category)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -139,7 +157,10 @@ func (h *ArticleHandler) GetArticle(c *gin.Context) {
 	// 判断是否需要增加浏览量（公开访问时增加）
 	incrementView := c.Query("view") == "true"
 
-	article, err := h.service.GetArticle(uint(articleID), incrementView)
+	// 获取客户端 IP
+	clientIP := c.ClientIP()
+
+	article, err := h.service.GetArticle(uint(articleID), incrementView, clientIP)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
@@ -182,6 +203,84 @@ func (h *ArticleHandler) GetPublishedArticles(c *gin.Context) {
 		"data":  articles,
 		"total": len(articles),
 	})
+}
+
+// GetFeaturedArticles 获取精选文章
+// GET /api/v1/articles/public/featured
+func (h *ArticleHandler) GetFeaturedArticles(c *gin.Context) {
+	limit := 3 // 默认3篇
+	if l := c.Query("limit"); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 {
+			limit = parsed
+		}
+	}
+
+	articles, err := h.service.GetFeaturedArticles(limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取精选文章失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":  articles,
+		"total": len(articles),
+	})
+}
+
+// GetHotArticles 获取热门文章
+// GET /api/v1/articles/public/hot
+func (h *ArticleHandler) GetHotArticles(c *gin.Context) {
+	limit := 3 // 默认3篇
+	if l := c.Query("limit"); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 {
+			limit = parsed
+		}
+	}
+
+	articles, err := h.service.GetHotArticles(limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取热门文章失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":  articles,
+		"total": len(articles),
+	})
+}
+
+// SetFeatured 设置精选状态（管理员）
+// PUT /api/v1/admin/articles/:id/featured
+func (h *ArticleHandler) SetFeatured(c *gin.Context) {
+	userRole, exists := c.Get("userRole")
+	if !exists || userRole.(string) != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "无权执行此操作"})
+		return
+	}
+
+	articleID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的文章ID"})
+		return
+	}
+
+	var req SetFeaturedRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "请求参数无效"})
+		return
+	}
+
+	if err := h.service.SetFeatured(uint(articleID), req.Featured); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	message := "已取消精选"
+	if req.Featured {
+		message = "已设为精选"
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": message})
 }
 
 // ReviewArticle 审核文章（管理员）
