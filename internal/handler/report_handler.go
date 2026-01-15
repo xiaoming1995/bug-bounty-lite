@@ -73,10 +73,7 @@ func (h *ReportHandler) CreateHandler(c *gin.Context) {
 		AuthorID:            userID.(uint),
 	}
 
-	// 设置默认值
-	if report.Severity == "" {
-		report.Severity = "Low"
-	}
+	// Severity 字段由管理员/厂商审核后设置，新提交时保持为空
 
 	if err := h.Service.SubmitReport(report); err != nil {
 		response.BadRequest(c, err.Error())
