@@ -69,7 +69,14 @@ docker compose ps
 |------|------|
 | `./review_reports` | 漏洞审核 |
 | `./review_articles` | 文章审核 |
-| `./seed_articles` | 填充学习中心文章数据 |
+| `./seed_all` | 填充所有测试数据（推荐） |
+| `./seed_articles` | 填充学习中心文章 |
+| `./seed_avatars` | 填充头像库数据 |
+| `./seed_organizations` | 填充组织数据 |
+| `./seed_projects` | 填充项目数据 |
+| `./seed_project_data` | 填充指定用户的项目数据 |
+| `./seed_reports` | 填充漏洞报告数据 |
+| `./seed_users` | 填充用户数据 |
 | `./migrate_tool` | 数据库迁移 |
 | `./init_tool` | 系统初始化 |
 
@@ -133,11 +140,35 @@ docker compose exec -it go-api ./review_articles -i
 ### 数据填充
 
 ```bash
+# 填充所有测试数据（推荐，包含用户、项目、报告等）
+docker compose exec go-api ./seed_all
+
 # 填充学习中心测试文章（10篇）
 docker compose exec go-api ./seed_articles
 
-# 清理后重新填充
+# 清理后重新填充文章
 docker compose exec go-api ./seed_articles -clean
+
+# 填充用户数据
+docker compose exec go-api ./seed_users
+
+# 填充头像库数据
+docker compose exec go-api ./seed_avatars
+
+# 填充组织数据
+docker compose exec go-api ./seed_organizations
+
+# 填充项目数据
+docker compose exec go-api ./seed_projects
+
+# 填充漏洞报告数据（需先有用户数据）
+docker compose exec go-api ./seed_reports
+
+# 为指定用户填充项目数据
+docker compose exec go-api ./seed_project_data -user 1
+
+# 清理指定用户的项目数据
+docker compose exec go-api ./seed_project_data -user 1 -clean
 ```
 
 ### 数据库工具

@@ -34,8 +34,15 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o review_articles ./cmd/
 # 漏洞审核工具
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o review_reports ./cmd/review-reports
 
-# 文章数据填充工具
+# 数据填充工具
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o seed_all ./cmd/seed-all
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o seed_articles ./cmd/seed-articles
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o seed_avatars ./cmd/seed-avatars
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o seed_organizations ./cmd/seed-organizations
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o seed_projects ./cmd/seed-projects
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o seed_project_data ./cmd/seed-project-data
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o seed_reports ./cmd/seed-reports
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o seed_users ./cmd/seed-users
 
 # ==============================
 # 阶段 2: 运行 (Runner)
@@ -59,7 +66,14 @@ COPY --from=builder /app/migrate_tool .
 COPY --from=builder /app/init_tool .
 COPY --from=builder /app/review_articles .
 COPY --from=builder /app/review_reports .
+COPY --from=builder /app/seed_all .
 COPY --from=builder /app/seed_articles .
+COPY --from=builder /app/seed_avatars .
+COPY --from=builder /app/seed_organizations .
+COPY --from=builder /app/seed_projects .
+COPY --from=builder /app/seed_project_data .
+COPY --from=builder /app/seed_reports .
+COPY --from=builder /app/seed_users .
 
 # 复制配置文件
 COPY --from=builder /app/config ./config
