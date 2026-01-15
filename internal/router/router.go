@@ -113,6 +113,11 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 	projectTaskService := service.NewProjectTaskService(projectTaskRepo, projectAssignmentRepo, projectRepo)
 	projectTaskHandler := handler.NewProjectTaskHandler(projectTaskService, projectTaskRepo, projectAssignmentRepo, projectRepo, projectAttachmentRepo)
 
+	// Dashboard 模块（仪表盘/首页统计）
+	dashboardRepo := repository.NewDashboardRepo(db)
+	dashboardService := service.NewDashboardService(dashboardRepo)
+	dashboardHandler := handler.NewDashboardHandler(dashboardService)
+
 	// ===========================
 	// 5. 注册路由
 	// ===========================
@@ -251,6 +256,15 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 			avatars.POST("/upload", avatarHandler.UploadAvatarHandler)     // 上传头像（管理员）
 			avatars.PUT("/:id", avatarHandler.UpdateAvatarHandler)         // 更新头像信息（管理员）
 			avatars.DELETE("/:id", avatarHandler.DeleteAvatarHandler)      // 删除头像（管理员）
+		}
+
+		// 需要认证的路由 - Dashboard（仪表盘/首页统计）
+		dashboard := api.Group("/dashboard")
+		dashboard.Use(middleware.AuthMiddleware(jwtManager))
+		{
+			dashboard.GET("/statistics", dashboardHandler.GetStatistics) // 获取统计数据
+			dashboard.GET("/trend", dashboardHandler.GetTrend)           // 获取趋势数据
+			dashboard.GET("/reports", dashboardHandler.GetReports)       // 获取漏洞列表
 		}
 	}
 
