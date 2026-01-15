@@ -139,37 +139,161 @@ docker compose exec -it go-api ./review_articles -i
 
 ### 数据填充
 
+#### seed_all - 填充所有测试数据
+
 ```bash
-# 填充所有测试数据（推荐，包含用户、项目、报告等）
+# 基本用法（填充所有测试数据）
 docker compose exec go-api ./seed_all
 
-# 填充学习中心测试文章（10篇）
+# 强制填充（清除已有数据后重新填充）
+docker compose exec go-api ./seed_all -force
+```
+
+**参数说明：**
+| 参数 | 说明 |
+|------|------|
+| `-force` | 强制填充，即使数据已存在 |
+| `-help` | 显示帮助信息 |
+
+---
+
+#### seed_articles - 填充学习中心文章
+
+```bash
+# 填充所有预设文章（10篇）
 docker compose exec go-api ./seed_articles
 
-# 清理后重新填充文章
-docker compose exec go-api ./seed_articles -clean
+# 填充指定数量的文章
+docker compose exec go-api ./seed_articles -count 5
 
+# 清理后重新填充
+docker compose exec go-api ./seed_articles -clean
+```
+
+**参数说明：**
+| 参数 | 说明 |
+|------|------|
+| `-count` | 生成指定数量的文章（0表示使用所有预设文章） |
+| `-clean` | 清除所有测试文章后重新生成 |
+
+---
+
+#### seed_users - 填充用户数据
+
+```bash
 # 填充用户数据
 docker compose exec go-api ./seed_users
 
-# 填充头像库数据
+# 强制填充
+docker compose exec go-api ./seed_users -force
+```
+
+**参数说明：**
+| 参数 | 说明 |
+|------|------|
+| `-force` | 强制填充，即使数据已存在 |
+| `-help` | 显示帮助信息 |
+
+---
+
+#### seed_avatars - 填充头像库数据
+
+```bash
+# 填充头像数据
 docker compose exec go-api ./seed_avatars
 
+# 强制填充（清除已有头像后重新填充）
+docker compose exec go-api ./seed_avatars -force
+```
+
+**参数说明：**
+| 参数 | 说明 |
+|------|------|
+| `-force` | 强制填充，会清除已有数据 |
+| `-help` | 显示帮助信息 |
+
+---
+
+#### seed_organizations - 填充组织数据
+
+```bash
 # 填充组织数据
 docker compose exec go-api ./seed_organizations
 
+# 强制填充
+docker compose exec go-api ./seed_organizations -force
+```
+
+**参数说明：**
+| 参数 | 说明 |
+|------|------|
+| `-force` | 强制填充，即使数据已存在 |
+| `-help` | 显示帮助信息 |
+
+---
+
+#### seed_projects - 填充项目数据
+
+```bash
 # 填充项目数据
 docker compose exec go-api ./seed_projects
 
-# 填充漏洞报告数据（需先有用户数据）
+# 强制填充
+docker compose exec go-api ./seed_projects -force
+```
+
+**参数说明：**
+| 参数 | 说明 |
+|------|------|
+| `-force` | 强制填充，即使数据已存在 |
+| `-help` | 显示帮助信息 |
+
+---
+
+#### seed_reports - 填充漏洞报告数据
+
+> ⚠️ **注意**：需要先填充用户数据
+
+```bash
+# 填充漏洞报告数据
 docker compose exec go-api ./seed_reports
 
-# 为指定用户填充项目数据
+# 强制填充
+docker compose exec go-api ./seed_reports -force
+```
+
+**参数说明：**
+| 参数 | 说明 |
+|------|------|
+| `-force` | 强制填充，即使数据已存在 |
+| `-help` | 显示帮助信息 |
+
+---
+
+#### seed_project_data - 为指定用户填充项目数据
+
+> 为特定用户生成项目测试数据（包含项目指派和附件）
+
+```bash
+# 使用用户 ID 填充
 docker compose exec go-api ./seed_project_data -user 1
+
+# 使用用户名填充
+docker compose exec go-api ./seed_project_data -username admin
 
 # 清理指定用户的项目数据
 docker compose exec go-api ./seed_project_data -user 1 -clean
+
+# 使用用户名清理
+docker compose exec go-api ./seed_project_data -username admin -clean
 ```
+
+**参数说明：**
+| 参数 | 说明 |
+|------|------|
+| `-user` | 指定用户ID（与 -username 二选一，必填） |
+| `-username` | 指定用户名（与 -user 二选一） |
+| `-clean` | 清理该用户的所有测试数据 |
 
 ### 数据库工具
 
