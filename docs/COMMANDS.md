@@ -10,6 +10,7 @@
 - [数据库命令](#数据库命令)
 - [测试数据填充](#测试数据填充)
 - [文章审核](#文章审核)
+- [漏洞审核](#漏洞审核)
 - [测试命令](#测试命令)
 - [Docker 命令](#docker-命令)
 - [工具命令](#工具命令)
@@ -86,6 +87,21 @@ make seed-project-data USERNAME=admin
 make seed-project-data USER=1 CLEAN=1
 ```
 
+### 学习中心文章数据
+
+为学习中心生成测试文章：
+
+```bash
+# 生成所有测试文章（10篇）
+make seed-articles
+
+# 清理后重新生成
+make seed-articles CLEAN=1
+
+# 生成指定数量
+make seed-articles COUNT=5
+```
+
 ---
 
 ## 📝 文章审核
@@ -129,6 +145,48 @@ make review-interactive
 
 ---
 
+## 🔒 漏洞审核
+
+> 用于审核用户提交的漏洞报告。
+
+| 命令 | 说明 |
+|------|------|
+| `make vuln-list` | 查看所有待审核漏洞报告 |
+| `make vuln-audited` | 查看所有已审核的报告 |
+| `make vuln-all` | 查看所有漏洞报告 |
+| `make vuln-approve ID=<ID> SEVERITY=<等级>` | 审核通过 |
+| `make vuln-reject ID=<ID>` | 驳回报告 |
+| `make vuln-interactive` | 交互式审核模式 |
+
+### 危害等级说明
+
+| 等级 | 英文 | 说明 |
+|------|------|------|
+| 严重 | Critical | 影响最大，需立即修复 |
+| 高危 | High | 影响较大，优先级高 |
+| 中危 | Medium | 影响中等，需要关注 |
+| 低危 | Low | 影响较小 |
+| 无危害 | None | 无实际影响 |
+
+### 使用示例
+
+```bash
+# 1. 查看待审核列表
+make vuln-list
+
+# 2. 审核通过 ID=5 的报告，评为高危
+make vuln-approve ID=5 SEVERITY=High
+
+# 3. 驳回 ID=3 的报告
+make vuln-reject ID=3
+
+# 4. 查看已审核报告
+make vuln-audited
+
+# 5. 交互式模式（推荐）
+make vuln-interactive
+```
+
 ## 🧪 测试命令
 
 | 命令 | 说明 |
@@ -152,6 +210,8 @@ make review-interactive
 | `make docker-run` | 运行 Docker 容器（端口 8080） |
 | `make docker-compose-up` | docker-compose 启动 |
 | `make docker-compose-down` | docker-compose 停止 |
+
+> 📖 **详细文档**：Docker 环境下执行管理脚本的完整说明请参阅 [DOCKER.md](./DOCKER.md)
 
 ---
 
@@ -207,4 +267,16 @@ make review-list
 make review-approve ID=1
 make review-approve ID=2
 make review-reject ID=3 REASON="需要补充更多细节"
+```
+
+### 漏洞审核工作流
+
+```bash
+# 查看待审核
+make vuln-list
+
+# 逐个审核
+make vuln-approve ID=1 SEVERITY=High
+make vuln-approve ID=2 SEVERITY=Medium
+make vuln-reject ID=3
 ```

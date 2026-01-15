@@ -1,4 +1,4 @@
-.PHONY: run run-migrate build test clean docker-build docker-run tidy lint migrate migrate-status init init-force seed-organizations seed-organizations-force seed-avatars seed-avatars-force seed-projects seed-projects-force seed-users seed-users-force seed-reports seed-reports-force seed-all seed-project-data seed-articles review-list review-approve review-reject review-interactive help
+.PHONY: run run-migrate build test clean docker-build docker-run tidy lint migrate migrate-status init init-force seed-organizations seed-organizations-force seed-avatars seed-avatars-force seed-projects seed-projects-force seed-users seed-users-force seed-reports seed-reports-force seed-all seed-project-data seed-articles review-list review-approve review-reject review-interactive vuln-list vuln-audited vuln-all vuln-approve vuln-reject vuln-interactive help
 
 # 默认目标
 .DEFAULT_GOAL := help
@@ -190,6 +190,49 @@ review-unfeatured:
 	fi
 	go run cmd/review-articles/main.go -unfeatured $(ID)
 
+# ===========================
+# 漏洞审核命令
+# ===========================
+
+## vuln-list: 查看所有待审核的漏洞报告
+vuln-list:
+	go run cmd/review-reports/main.go -list
+
+## vuln-audited: 查看所有已审核的漏洞报告
+vuln-audited:
+	go run cmd/review-reports/main.go -audited
+
+## vuln-all: 查看所有漏洞报告
+vuln-all:
+	go run cmd/review-reports/main.go -all
+
+## vuln-approve: 审核通过指定ID的漏洞报告（需要指定危害等级）
+## 用法: make vuln-approve ID=5 SEVERITY=High
+## 等级: Critical, High, Medium, Low, None
+vuln-approve:
+	@if [ -z "$(ID)" ]; then \
+		echo "请指定报告ID: make vuln-approve ID=<报告ID> SEVERITY=<等级>"; \
+		exit 1; \
+	fi
+	@if [ -z "$(SEVERITY)" ]; then \
+		echo "请指定危害等级: make vuln-approve ID=<报告ID> SEVERITY=<等级>"; \
+		echo "可用等级: Critical, High, Medium, Low, None"; \
+		exit 1; \
+	fi
+	go run cmd/review-reports/main.go -approve $(ID) -severity $(SEVERITY)
+
+## vuln-reject: 驳回指定ID的漏洞报告
+## 用法: make vuln-reject ID=5
+vuln-reject:
+	@if [ -z "$(ID)" ]; then \
+		echo "请指定报告ID: make vuln-reject ID=<报告ID>"; \
+		exit 1; \
+	fi
+	go run cmd/review-reports/main.go -reject $(ID)
+
+## vuln-interactive: 交互式漏洞审核模式
+vuln-interactive:
+	go run cmd/review-reports/main.go -i
 
 # ===========================
 # 测试命令
