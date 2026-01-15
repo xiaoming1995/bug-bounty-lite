@@ -19,14 +19,18 @@ function Show-Help {
     Write-Host "  seed-users       - Seed users test data"
     Write-Host "  seed-reports     - Seed reports test data"
     Write-Host "  seed-all         - Seed all test data"
+    Write-Host "  clean-data       - Clean test data (interactive)"
+    Write-Host "  clean-force      - Clean test data (no prompt)"
+    Write-Host "  clean-stats      - Show data statistics"
     Write-Host "  build            - Build project"
     Write-Host "  test             - Run tests"
-    Write-Host "  clean            - Clean build artifacts"
+    Write-Host "  clean-build      - Clean build artifacts"
     Write-Host "  help             - Show this help message"
     Write-Host ""
     Write-Host "Examples:" -ForegroundColor Yellow
     Write-Host "  .\run.ps1 migrate"
     Write-Host "  .\run.ps1 seed-all"
+    Write-Host "  .\run.ps1 clean-data"
     Write-Host "  .\run.ps1 run"
 }
 
@@ -93,6 +97,21 @@ function Clean-Build {
     }
 }
 
+function Clean-Data {
+    Write-Host "[Cleaning Test Data - Interactive]" -ForegroundColor Yellow
+    go run cmd/clean/main.go -all
+}
+
+function Clean-Force {
+    Write-Host "[Cleaning Test Data - Force]" -ForegroundColor Yellow
+    go run cmd/clean/main.go -all -confirm
+}
+
+function Clean-Stats {
+    Write-Host "[Data Statistics]" -ForegroundColor Cyan
+    go run cmd/clean/main.go -stats
+}
+
 # Main script logic
 switch ($Command.ToLower()) {
     "run" { Run-Server }
@@ -102,9 +121,13 @@ switch ($Command.ToLower()) {
     "seed-users" { Seed-Users }
     "seed-reports" { Seed-Reports }
     "seed-all" { Seed-All }
+    "clean-data" { Clean-Data }
+    "clean-force" { Clean-Force }
+    "clean-stats" { Clean-Stats }
     "build" { Build-Project }
     "test" { Run-Tests }
-    "clean" { Clean-Build }
+    "clean-build" { Clean-Build }
+    "clean" { Clean-Build }  # 兼容旧命令
     "help" { Show-Help }
     default {
         Write-Host "Unknown command: $Command" -ForegroundColor Red

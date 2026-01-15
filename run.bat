@@ -12,6 +12,9 @@ if "%1"=="seed-projects" goto seed-projects
 if "%1"=="seed-users" goto seed-users
 if "%1"=="seed-reports" goto seed-reports
 if "%1"=="seed-all" goto seed-all
+if "%1"=="clean" goto clean
+if "%1"=="clean-force" goto clean-force
+if "%1"=="clean-stats" goto clean-stats
 if "%1"=="build" goto build
 if "%1"=="test" goto test
 goto help
@@ -51,6 +54,21 @@ echo [Seeding All Test Data]
 go run cmd/seed-all/main.go
 goto end
 
+:clean
+echo [Cleaning Test Data - Interactive]
+go run cmd/clean/main.go -all
+goto end
+
+:clean-force
+echo [Cleaning Test Data - Force]
+go run cmd/clean/main.go -all -confirm
+goto end
+
+:clean-stats
+echo [Data Statistics]
+go run cmd/clean/main.go -stats
+goto end
+
 :build
 echo [Building Project]
 if not exist bin mkdir bin
@@ -76,6 +94,9 @@ echo   seed-projects    - Seed projects test data
 echo   seed-users       - Seed users test data
 echo   seed-reports     - Seed reports test data
 echo   seed-all         - Seed all test data
+echo   clean            - Clean test data (interactive)
+echo   clean-force      - Clean test data (no prompt)
+echo   clean-stats      - Show data statistics
 echo   build            - Build project
 echo   test             - Run tests
 echo   help             - Show this help message
