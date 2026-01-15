@@ -7,11 +7,12 @@ config/config.yaml
 *.exe
 *.dll
 # Mac/Linux
-main
-server
+/main
+/server
 # 临时文件
 *.test
 *.out
+nul
 
 # --- 3. IDE & 系统文件 ---
 .idea/
