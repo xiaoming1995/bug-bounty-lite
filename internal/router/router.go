@@ -118,12 +118,19 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 	dashboardService := service.NewDashboardService(dashboardRepo)
 	dashboardHandler := handler.NewDashboardHandler(dashboardService)
 
+	// Ranking 模块
+	rankingRepo := repository.NewRankingRepo(db)
+	rankingService := service.NewRankingService(rankingRepo)
+	rankingHandler := handler.NewRankingHandler(rankingService)
+
 	// ===========================
 	// 5. 注册路由
 	// ===========================
 
 	api := r.Group("/api/v1")
 	{
+		// 公开路由 - 排行榜
+		api.GET("/ranking", rankingHandler.GetRanking)
 		// 公开路由 - Auth
 		auth := api.Group("/auth")
 		{
